@@ -1,27 +1,22 @@
 {
   "manifest_version": 3,
-  "name": "PromptTemplate",
+  "name": "Prompt Template",
   "version": "1.0.0",
-  "description": "生成AIにSkill機能を追加",
+  "description": "生成AIにSkills機能を追加",
   "permissions": ["storage"],
   "content_scripts": [
     {
       "matches": [
-        "https://chat.openai.com/*",
+        "https://chatgpt.com/*",
         "https://gemini.google.com/*",
         "https://claude.ai/*"
       ],
-      "js": ["src/content/index.js"],
+      "js": ["src/content/content.js"],
       "css": ["src/content/styles.css"]
     }
   ],
   "options_page": "src/options/index.html",
   "action": {
     "default_popup": "src/popup/index.html"
-  },
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
   }
 }
