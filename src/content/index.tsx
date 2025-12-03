@@ -37,7 +37,8 @@ const registerTextArea = (textarea: HTMLElement) => {
   currentTextArea = textarea;
   textarea.addEventListener('input', handleInput);
 
-  console.log('入力欄を登録', textarea);
+  observeTextArea();
+  console.log('入力欄を登録:', textarea);
 }
 
 const cleanUp = () => {
@@ -45,6 +46,21 @@ const cleanUp = () => {
     currentTextArea.removeEventListener('input', handleInput);
     currentTextArea = null;
   }
+  if (observer) {
+    observer.disconnect();
+    observer = null;
+  }
+}
+
+const observeTextArea = () => {
+  observer = new MutationObserver(()=> {
+    if (currentTextArea && !document.contains(currentTextArea)) {
+      console.log('入力欄がDOMから削除、監視を再開');
+      init();
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
 }
 
 //* 入力欄が有効かチェック */
