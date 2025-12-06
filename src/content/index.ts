@@ -80,7 +80,7 @@ const findTextAreas = (): HTMLElement | null => {
     for (const el of elements) {
       const htmlEl = el as HTMLElement;
       if (isValidInput(htmlEl)) return htmlEl;
-      }
+    }
   }
   return null;
 };
@@ -88,11 +88,12 @@ const findTextAreas = (): HTMLElement | null => {
 //* 入力欄が有効かチェック */
 const isValidInput = (element: HTMLElement): boolean => {
   const style = window.getComputedStyle(element);
+  const rect = element.getBoundingClientRect();
   return style.display !== 'none' && 
          style.visibility !== 'hidden' && 
          element.offsetParent !== null &&
-         element.getBoundingClientRect().width > 0 &&
-         element.getBoundingClientRect().height > 0
+         rect.width > 0 &&
+         rect.height > 0
 };
 
 //* 入力欄を監視 */
@@ -107,7 +108,7 @@ const handleInput = async () => {
       hideSuggest();
     }
   } catch (e) {
-    console.error('入力欄のフォーマットチェック中にエラーが発生:', e);
+    console.error(e);
     return;
   }
 }
@@ -142,6 +143,17 @@ const checkFormat = async ( target: HTMLTextAreaElement | HTMLDivElement ): Prom
 const getRegex = () => {
   return new RegExp(`(?:^|\\s)${key}([^${key}\\s]*)$`);
 }
+
+//* 禁止文字のチェック */
+// const checkForbiddenChars = (input: string): boolean => {
+//   const forbiddenChars = ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '+', '=', '{', '}', '[', ']', '|', '\\', ':', ';', '"', "'", '<', '>', ',', '.', '?', '/','~','`'];
+//   for (const char of forbiddenChars) {
+//     if (input.includes(char)) {
+//       return false;
+//     }
+//   }
+//   return true;
+// }
 
 //* ショートカットキーの監視 */
 browser.storage.onChanged.addListener(async (changes, area) => {

@@ -90,19 +90,3 @@ export const setShortcutKey = async (key: string): Promise<void> => {
   const data = await loadStoredData();
   await browser.storage.sync.set({ data: { ...data, shortcutKey: key } });
 };
-
-export const prompts: Template[] = [
-  { id: 1, groupId: 1, name: 'Summary', content: '#以下の文章を３つの要素にまとめて要約してください。 \n\n "textを入力してください"' },
-  { id: 2, groupId: 1, name: 'Analyze', content: '#以下の文章を分析してください。 \n\n "textを入力してください"' },
-  { id: 3, groupId: 2, name: 'Check-Word', content: '#これは正しい語でしょうか？その語を定義し、さらにその文脈で適切か（あるいは適切でないか）を説明してください。 \n\n "textを入力してください"' },
-  { id: 4, groupId: 2, name: 'Check-Grammar', content: '#以下の文章の文法をチェックし、必要に応じて修正してください。 \n\n "textを入力してください"' },
-  { id: 5, groupId: 3, name: 'Digest', content: '#以下の動画を要約してください。 \n\n "動画のリンクを入力してください"' },
-  { id: 6, groupId: 4, name: 'Explain-Code', content: '#以下のコードの動作を説明してください。 \n\n "コードを入力してください"' },
-  { id: 7, groupId: 4, name: 'Optimize-Code', content: '#以下のコードを最適化してください。 \n\n "コードを入力してください"' },
-];
-export const groups: Group[] = [
-  { id: 1, name: 'General' },
-  { id: 2, name: 'Writing' },
-  { id: 3, name: 'Video' },
-  { id: 4, name: 'Coding' },
-];
