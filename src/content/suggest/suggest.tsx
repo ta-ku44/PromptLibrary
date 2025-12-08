@@ -1,6 +1,6 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useEffect } from 'react';
 import { createRoot ,type Root } from 'react-dom/client';
-import useAutocomplete from '@mui/lab/useAutocomplete';
+//import useAutocomplete from '@mui/lab/useAutocomplete';
 import './styles.css';
 import { loadStoredData } from '../../utils/storage.ts';
 import type { Template, Group } from '../../types/index';
@@ -9,8 +9,12 @@ let root: Root | null = null;
 let container: HTMLElement | null = null;
 
 //** サジェストを表示 */
-export const showSuggest = async (query: string, textArea: HTMLElement | null, insertedTemplate: (template: Template) => void) => {
-  if (!textArea) return;
+export const showSuggest = async (
+  query: string,
+  el: HTMLElement | null,
+  onSelect: (template: Template) => void
+): Promise<void> => {
+  if (!el) return;
 
   // プロンプトのテンプレートを取得
   const data = await loadStoredData();
@@ -19,9 +23,22 @@ export const showSuggest = async (query: string, textArea: HTMLElement | null, i
   );
   if (templates.length === 0) return
 
-  const rect = textArea.getBoundingClientRect();
+  // サジェストの位置を計算
+  const rect = el.getBoundingClientRect();
+  const suggestHeight = Math.min(templates.length * 40 + 50, 300);
+  const viewportHeight = window.innerHeight;
+
+  // 画面下に収まるかチェック
+  const spaceBelow = viewportHeight - rect.bottom;
+  const spaceAbove = rect.top;
+  const showAbove = spaceBelow < suggestHeight && spaceAbove > spaceBelow;
+
+  // 上に表示する場合は入力欄の上端から、下に表示する場合は入力欄の下端から
+  const gap = 12; // 入力欄との間隔
   const position = {
-    top: rect.bottom + window.scrollY,
+    top: showAbove 
+      ? rect.top + window.scrollY - suggestHeight - gap
+      : rect.bottom + window.scrollY + gap,
     left: rect.left + window.scrollX,
   };
 
@@ -44,7 +61,7 @@ export const showSuggest = async (query: string, textArea: HTMLElement | null, i
     <Suggest
       templates={templates}
       groups={data.groups}
-      onSelect={insertedTemplate}
+      onSelect={onSelect}
       onClose={hideSuggest}
     />
   );
@@ -72,80 +89,59 @@ interface SuggestProps {
   onClose: () => void;
 }
 
-// interface GroupedSection {
-//   title: string;
-//   items: Template[];
-// }
-
 const Suggest: React.FC<SuggestProps> = ({ templates, groups, onSelect, onClose }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const {
-    getRootProps,
-    getListboxProps,
-    getOptionProps,
-  } = useAutocomplete<Template>({
-    options: templates,
+  useEffect(() => {
+    // サジェスト外のクリック時に閉じる
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
 
-    getOptionLabel: (option: Template) => option.name,
-    groupBy: (option: Template) => {
-      const group = groups.find((g: Group) => g.id === option.groupId);
-      return group?.name || 'Others';
-    },
-
-    defaultValue: null,
-    freeSolo: false,
-    open: true,
-
-    onClose: (_, reason) => { if (reason === 'escape' || reason === 'blur') { onClose();} }
-  });
-
-  // グループごとにテンプレートを分類
-  const groupedSections = useMemo(() => {
-    const sections = new Map<string, Template[]>();
+  const groupedData = useMemo(() => {
+    const grouped = new Map<string, Template[]>();
     templates.forEach(template => {
       const group = groups.find(g => g.id === template.groupId);
-      const groupName = group ? group.name : 'Others';
-      if (!sections.has(groupName)) {
-        sections.set(groupName, []);
+      const groupName = group?.name || 'Others';
+      if (!grouped.has(groupName)) {
+        grouped.set(groupName, []);
       }
-      sections.get(groupName)?.push(template);
-    }
-    );
-    return Array.from(sections.entries()).map(([title, items]) => ({ title, items }));
+      grouped.get(groupName)?.push(template);
+    });
+    return Array.from(grouped, ([title, items]) => ({ title, items }));
   }, [templates, groups]);
 
-  const root = getRootProps();
-  const listbox = getListboxProps();
-
   return (
-    <div className="pt-suggestion-container" ref={containerRef} {...root}>
-      <div className="pt-suggestion-scroll-area">
-        {groupedSections.map((groupOption, groupIdx) => {
-          return (
-            <div key={groupIdx}>
-              <div className="section-header">{groupOption.title}</div>
-              <ul {...listbox}>
-                {groupOption.items.map((item, index) => {
-                  const optionProps = getOptionProps({ option: item, index });
-
-                  return (
-                    <li
-                      {...optionProps}
-                      key={item.id}
-                      className="list-item"
-                      onClick={() => onSelect(item)}
-                    >
-                      {item.name}
-                  </li>
-                  );
-                })}
-              </ul>
-            </div>
-          );
-        })}
-
-        {groupedSections.length === 0 && (
+    <div className="pt-suggestion-container" ref={containerRef}>
+      <div className='pt-suggestion-scroll-area'>
+        
+        {groupedData.map((section, idx) => (
+          <div key={idx}>
+            {/* セクションヘッダー */}
+            {section.title && (
+              <div className="section-header">{section.title}</div>
+            )}
+            
+            {/* リストアイテム */}
+            {section.items.map((item) => (
+              <div 
+                key={item.id} 
+                className="list-item"
+                onClick={() => onSelect(item)}
+              >
+                {/* ここではテンプレート名を表示。必要に応じて content のプレビューなども追加可 */}
+                {item.name}
+              </div>
+            ))}
+          </div>
+        ))}
+        
+        {groupedData.length === 0 && (
           <div style={{ padding: '10px', color: '#999', fontSize: '12px' }}>
             No templates found.
           </div>

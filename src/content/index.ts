@@ -25,11 +25,15 @@ const init = async () => {
       console.log('入力欄を検出しInputHandlerを初期化:', el);
       if (curInputEl !== el){
         curInputEl = el;
-        inputHandler = new InputHandler(curInputEl as HTMLTextAreaElement | HTMLDivElement, key,
-          (input) => {
-            input ? showSuggest(input, curInputEl, (template) => { inputHandler?.insertTemplate(template); }) : hideSuggest();
+        inputHandler = new InputHandler(curInputEl as HTMLTextAreaElement | HTMLDivElement, key, (query) => {
+          if (query !== null) {
+            showSuggest(query, curInputEl, (template) => {
+              inputHandler?.insertTemplate(template);
+            });
+          } else {
+            hideSuggest();
           }
-        );
+        });
       curInputEl.addEventListener('input', inputHandler.handleInput);
       }
     }
