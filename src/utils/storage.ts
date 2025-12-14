@@ -120,17 +120,63 @@ export const moveTemplateToGroup = async (
   newOrder: number
 ): Promise<void> => {
   const data = await loadStoredData();
-  const templates = data.templates.map(t => {
-    if (t.id === templateId) {
-      return { ...t, groupId: newGroupId, order: newOrder };
-    }
-    // 新しいグループ内で、挿入位置以降のテンプレートのorderを1つずつ増やす
-    if (t.groupId === newGroupId && t.order >= newOrder) {
-      return { ...t, order: t.order + 1 };
-    }
-    return t;
-  });
-  await saveTemplates(templates);
+  
+  // 移動対象のテンプレートを取得
+  const targetTemplate = data.templates.find(t => t.id === templateId);
+  if (!targetTemplate) return;
+  
+  const oldGroupId = targetTemplate.groupId;
+  const oldOrder = targetTemplate.order;
+  
+  let updatedTemplates: Template[];
+  
+  if (oldGroupId === newGroupId) {
+    // 同じグループ内での移動
+    updatedTemplates = data.templates.map(t => {
+      if (t.groupId !== newGroupId) return t;
+      
+      if (t.id === templateId) {
+        // 移動対象のテンプレート
+        return { ...t, order: newOrder };
+      }
+      
+      // 他のテンプレートのorder調整
+      if (oldOrder < newOrder) {
+        // 下方向への移動: oldOrder < t.order <= newOrder の範囲を-1
+        if (t.order > oldOrder && t.order <= newOrder) {
+          return { ...t, order: t.order - 1 };
+        }
+      } else {
+        // 上方向への移動: newOrder <= t.order < oldOrder の範囲を+1
+        if (t.order >= newOrder && t.order < oldOrder) {
+          return { ...t, order: t.order + 1 };
+        }
+      }
+      
+      return t;
+    });
+  } else {
+    // 異なるグループ間での移動
+    updatedTemplates = data.templates.map(t => {
+      if (t.id === templateId) {
+        // 移動対象のテンプレート
+        return { ...t, groupId: newGroupId, order: newOrder };
+      }
+      
+      if (t.groupId === oldGroupId && t.order > oldOrder) {
+        // 元のグループ: 移動したテンプレートより後ろのものを-1
+        return { ...t, order: t.order - 1 };
+      }
+      
+      if (t.groupId === newGroupId && t.order >= newOrder) {
+        // 新しいグループ: 挿入位置以降のものを+1
+        return { ...t, order: t.order + 1 };
+      }
+      
+      return t;
+    });
+  }
+  await saveTemplates(updatedTemplates);
 };
 
 //* ショートカットキー関連のストレージ操作 */

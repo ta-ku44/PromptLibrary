@@ -184,22 +184,34 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
   return (
     <div className="pt-suggestion-container" ref={suggestRef}>
       <div className='pt-suggestion-scroll-area'>    
-        {Array.from(groupedData.entries()).map(([groupId, tmplList]) => (
-          <div key={groupId ?? 'ungrouped'}>
-            {getGroupName(groupId) && (
-              <div className="section-header">{getGroupName(groupId)}</div>
-            )}
-            {tmplList.map((item) => (
-              <div 
-                key={item.id} 
-                className="list-item"
-                onClick={() => onSelect(item)}
-              >
-                {item.name}
-              </div>
-            ))}
-          </div>
-        ))}
+        {Array.from(groupedData.entries())
+          .sort(([groupIdA], [groupIdB]) => {
+            if (groupIdA === null) return 1;
+            if (groupIdB === null) return -1;
+            
+            const groupA = groups.find(g => g.id === groupIdA);
+            const groupB = groups.find(g => g.id === groupIdB);
+            return (groupA?.order ?? 0) - (groupB?.order ?? 0);
+          })
+          .map(([groupId, tmplList]) => (
+            <div key={groupId ?? 'ungrouped'}>
+              {getGroupName(groupId) && (
+                <div className="section-header">{getGroupName(groupId)}</div>
+              )}
+              {tmplList
+                .slice()
+                .sort((a, b) => a.order - b.order)
+                .map((item) => (
+                  <div 
+                    key={item.id} 
+                    className="list-item"
+                    onClick={() => onSelect(item)}
+                  >
+                    {item.name}
+                  </div>
+                ))}
+            </div>
+          ))}
       </div>
     </div>
   );
