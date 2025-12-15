@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useDroppable, useDraggable } from '@dnd-kit/core';
+import { useDraggable } from '@dnd-kit/core';
 import type { Group, Template } from '../../types/index.ts';
 import Icons from '../assets/icons.ts';
 import TemplateRow from './TemplateRow.tsx';
+import DropGap from '../ui/DropGap.tsx';
 
 interface GroupPanelProps {
   group: Group;
@@ -18,11 +19,7 @@ interface GroupPanelProps {
   startEditing?: boolean;
   onEditingComplete?: () => void;
   activeTemplateId?: number | null;
-  overTemplateId?: number | null;
-  dropPosition?: 'before' | 'after';
-  isHeaderDropTarget?: boolean;
-  isAddBtnDropTarget?: boolean;
-  isCrossGroupDrag?: boolean;
+  activeGapId?: string | null;
   groupDraggableId?: string;
   isGroupDragging?: boolean;
   isGroupDropTarget?: boolean;
@@ -43,28 +40,15 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
   startEditing = false,
   onEditingComplete,
   activeTemplateId = null,
-  overTemplateId = null,
-  dropPosition = 'before',
-  isHeaderDropTarget = false,
-  isAddBtnDropTarget = false,
-  isCrossGroupDrag = false,
+  activeGapId = null,
   isGroupDragging = false,
   isGroupDropTarget = false,
   groupDropPosition = 'before',
   groupDraggableId,
 }) => {
+  // グループ名編集状態
   const [isEditing, setIsEditing] = useState(startEditing);
   const [editName, setEditName] = useState(group.name);
-
-  const { setNodeRef: setHeaderDropRef } = useDroppable({
-    id: `group-header-${group.id}`,
-    data: { type: 'group-header', groupId: group.id },
-  });
-
-  const { setNodeRef: setAddBtnDropRef } = useDroppable({
-    id: `group-add-btn-${group.id}`,
-    data: { type: 'group-add-btn', groupId: group.id },
-  });
 
   const { setNodeRef: setDragRef, attributes, listeners } = useDraggable({
     id: groupDraggableId ?? `group-${group.id}`,
@@ -77,12 +61,14 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
     }
   }, [startEditing]);
 
+  //* グループ名ダブルクリック時の編集開始
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(true);
     setEditName(group.name);
   };
 
+  //* 編集終了処理
   const handleBlur = () => {
     setIsEditing(false);
     if (!editName.trim()) {
@@ -93,6 +79,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
     onEditingComplete?.();
   };
 
+  //* キーボード入力処理
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleBlur();
@@ -104,10 +91,10 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
   };
 
   const sortedTemplates = [...templates].sort((a, b) => a.order - b.order);
-  console.log('activeTemplateId:', activeTemplateId, 'isNull:', activeTemplateId == null);
 
   return (
     <>
+      {/* グループドロップ位置インジケーター（前） */}
       {isGroupDropTarget && groupDropPosition === 'before' && (
         <div className="group-drop-dummy" />
       )}
@@ -116,23 +103,14 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
         className={`group-item ${isGroupDragging ? 'dragging' : ''}`}
         style={isGroupDragging ? { opacity: 0.3 } : undefined}
       >
+        {/* グループヘッダー */}
         <div 
-          ref={node => {
-            setHeaderDropRef(node);
-            setDragRef(node);
-          }}
-          className={`group-header
-            ${isHeaderDropTarget ? 'header-drop-target' : ''}
-            ${activeTemplateId != null ? 'template-dragging' : ''}
-          `}
+          ref={setDragRef}
+          className={`group-header ${activeTemplateId != null ? 'template-dragging' : ''}`}
           {...attributes}
           {...listeners}
           onClick={() => {
-            // ドラッグ中は開閉しない
             if (!isEditing && !isGroupDragging) onToggle();
-          }}
-          onMouseEnter={(e) => {
-            if (activeTemplateId != null) e.stopPropagation();
           }}
         >
           <button 
@@ -191,33 +169,37 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
           </div>
         </div>
 
+        {/* テンプレート一覧 */}
         {isExpanded && !isGroupDragging && (
-          <div 
-            className={`templates-container ${isCrossGroupDrag ? 'group-drop-target' : ''}`}
-          >
-            {isHeaderDropTarget && (
-              <div className="drop-line-top" />
-            )}
+          <div className="templates-container">
+            <DropGap 
+              type="template"
+              groupId={group.id}
+              indexOrId={0}
+              isActive={activeGapId === `gap-${group.id}-0`}
+            />
             
-            {sortedTemplates.map((template) => (
-              <TemplateRow
-                key={template.id}
-                template={template}
-                onEdit={onEdit}
-                onDelete={onDeleteTemplate}
-                onNameChange={onTemplateNameChange}
-                isDragging={activeTemplateId === template.id}
-                isDropTarget={overTemplateId === template.id}
-                dropPosition={dropPosition}
-              />
+            {sortedTemplates.map((template, idx) => (
+              <React.Fragment key={template.id}>
+                <TemplateRow
+                  template={template}
+                  onEdit={onEdit}
+                  onDelete={onDeleteTemplate}
+                  onNameChange={onTemplateNameChange}
+                  isDragging={activeTemplateId === template.id}
+                />
+                
+                <DropGap 
+                  type="template"
+                  groupId={group.id}
+                  indexOrId={idx + 1}
+                  isActive={activeGapId === `gap-${group.id}-${idx + 1}`}
+                />
+              </React.Fragment>
             ))}
 
             <div className="add-template-wrapper">
-              {isAddBtnDropTarget && (
-                <div className="drop-line-bottom" />
-              )}
               <button 
-                ref={setAddBtnDropRef}
                 className="add-template-btn"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -233,6 +215,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
         )}
       </div>
 
+      {/* グループドロップ位置インジケーター（後） */}
       {isGroupDropTarget && groupDropPosition === 'after' && (
         <div className="group-drop-dummy" />
       )}

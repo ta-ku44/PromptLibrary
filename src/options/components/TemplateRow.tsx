@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { type Template } from '../../types/index.ts';
 import DragHandle from '../ui/DragHandle.tsx';
@@ -10,8 +10,6 @@ interface TemplateRowProps {
   onDelete: (id: number) => void;
   onNameChange: (id: number, name: string) => void;
   isDragging?: boolean;
-  isDropTarget?: boolean;
-  dropPosition?: 'before' | 'after';
 }
 
 const TemplateRow: React.FC<TemplateRowProps> = ({
@@ -20,8 +18,6 @@ const TemplateRow: React.FC<TemplateRowProps> = ({
   onDelete,
   onNameChange,
   isDragging = false,
-  isDropTarget = false,
-  dropPosition = 'before',
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(template.name);
@@ -70,54 +66,43 @@ const TemplateRow: React.FC<TemplateRowProps> = ({
   };
 
   const isNameEmpty = !template.name.trim();
-  
-  const dropClass = isDropTarget
-    ? dropPosition === 'before'
-      ? 'drop-target-line-before'
-      : 'drop-target-line-after'
-    : '';
 
   return (
-    <div 
-      ref={setNodeRef}
-      className={`template-wrapper ${dropClass} ${isDragging ? 'is-dragging' : ''}`}
-    >
-      <div className={`template-item ${isDragging ? 'dragging' : ''}`}>
-        <DragHandle listeners={listeners} attributes={attributes} />
-        {isEditing ? (
-          <input
-            type="text"
-            className="template-name-input"
-            value={editName}
-            onChange={(e) => setEditName(e.target.value)}
-            onBlur={handleBlur}
-            onKeyDown={handleKeyDown}
-            autoFocus
-          />
-        ) : (
-          <span className="template-name" onDoubleClick={handleDoubleClick}>
-            {isNameEmpty ? (
-              <>
-                <span className="name-required-indicator">*</span>
-                <span className="name-empty">(名前なし)</span>
-              </>
-            ) : (
-              template.name
-            )}
-          </span>
-        )}
-        <div className="template-actions">
-          <button className="icon-btn" onClick={() => onEdit(template)} title="編集">
-            <Icons.Edit />
-          </button>
-          <button
-            className="icon-btn delete"
-            onClick={() => onDelete(template.id)}
-            title="削除"
-          >
-            <Icons.Delete />
-          </button>
-        </div>
+    <div ref={setNodeRef} className={`template-item ${isDragging ? 'dragging' : ''}`}>
+      <DragHandle listeners={listeners} attributes={attributes} />
+      {isEditing ? (
+        <input
+          type="text"
+          className="template-name-input"
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          autoFocus
+        />
+      ) : (
+        <span className="template-name" onDoubleClick={handleDoubleClick}>
+          {isNameEmpty ? (
+            <>
+              <span className="name-required-indicator">*</span>
+              <span className="name-empty">(名前なし)</span>
+            </>
+          ) : (
+            template.name
+          )}
+        </span>
+      )}
+      <div className="template-actions">
+        <button className="icon-btn" onClick={() => onEdit(template)} title="編集">
+          <Icons.Edit />
+        </button>
+        <button
+          className="icon-btn delete"
+          onClick={() => onDelete(template.id)}
+          title="削除"
+        >
+          <Icons.Delete />
+        </button>
       </div>
     </div>
   );

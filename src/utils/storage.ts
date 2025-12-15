@@ -120,7 +120,6 @@ export const moveTemplateToGroup = async (
   newOrder: number
 ): Promise<void> => {
   const data = await loadStoredData();
-  
   // 移動対象のテンプレートを取得
   const targetTemplate = data.templates.find(t => t.id === templateId);
   if (!targetTemplate) return;

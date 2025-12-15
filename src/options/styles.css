@@ -271,7 +271,7 @@ body {
   padding: 8px 16px 16px 32px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   position: relative;
 }
 
@@ -313,85 +313,9 @@ body {
   background-color: rgba(74, 158, 255, 0.15);
 }
 
-/* Template wrapper for drop target line */
-.template-wrapper {
-  position: relative;
-}
-
-/* Dragging state - show placeholder outline */
-.template-wrapper.is-dragging .template-item {
-  background-color: #3a3a38;
-  border: 1px solid var(--border-color);
-  box-shadow: none;
-}
-
-.template-wrapper.is-dragging .template-item > * {
-  visibility: hidden;
-}
-
-.template-wrapper.drop-target-line-before::before {
-  content: '';
-  position: absolute;
-  top: -5px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--accent-color);
-  box-shadow: 0 0 4px var(--accent-color);
-  border-radius: 2px;
-  z-index: 10;
-}
-
-.template-wrapper.drop-target-line-after::after {
-  content: '';
-  position: absolute;
-  bottom: -5px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--accent-color);
-  box-shadow: 0 0 4px var(--accent-color);
-  border-radius: 2px;
-  z-index: 10;
-}
-
-/* Group drop target */
-.templates-container.group-drop-target {
-  background-color: rgba(74, 158, 255, 0.1);
-  border-radius: var(--border-radius);
-}
-
-/* Drop line at top of group */
-.drop-line-top {
-  position: absolute;
-  top: 3px;
-  left: 32px;
-  right: 16px;
-  height: 2px;
-  background-color: var(--accent-color);
-  box-shadow: 0 0 4px var(--accent-color);
-  border-radius: 2px;
-  pointer-events: none;
-  z-index: 10;
-}
-
 /* Add template button wrapper */
 .add-template-wrapper {
   position: relative;
-}
-
-/* Drop line at bottom of group */
-.drop-line-bottom {
-  position: absolute;
-  top: -5px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--accent-color);
-  box-shadow: 0 0 4px var(--accent-color);
-  border-radius: 2px;
-  pointer-events: none;
-  z-index: 10;
 }
 
 /* Drag overlay - follows cursor */
@@ -649,4 +573,37 @@ body {
   min-height: 40px;
   pointer-events: none;
   justify-content: flex-start;
+}
+
+.drop-gap {
+  transition: all 0.2s;
+}
+
+.drop-gap-template {
+  height: 10px; /* ヒット判定領域の広さ */
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  transition: none;
+}
+
+.drop-gap-template.active::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 2px; /* 線の太さ（細い線） */
+  background-color: var(--accent-color);
+  box-shadow: 0 0 4px var(--accent-color); /* 青い発光効果 */
+  border-radius: 2px;
+}
+
+/* グループ用Gap（変更なし、または必要に応じて調整） */
+.drop-gap-group.active {
+  height: 60px;
+  border: 2px dashed var(--accent-color);
+  border-radius: var(--border-radius);
+  background-color: rgba(74, 158, 255, 0.05);
+  margin: 8px 0;
 }
