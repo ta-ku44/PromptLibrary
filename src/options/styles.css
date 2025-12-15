@@ -151,17 +151,9 @@ body {
   opacity: 1;
 }
 
-.drag-handle:hover .drag-handle-dot {
-  background-color: var(--accent-color);
-}
-
 .drag-handle:active {
   cursor: grabbing;
   opacity: 1;
-}
-
-.drag-handle:active .drag-handle-dot {
-  background-color: var(--accent-color);
 }
 
 .drag-handle-dots {
@@ -305,6 +297,19 @@ body {
 
 .template-item.drag-overlay .drag-handle-dot {
   background-color: var(--accent-color);
+}
+
+.drag-handle:hover .drag-handle-dot {
+  background-color: var(--accent-color);
+}
+
+/* active で青くするのは drag-overlay のみ */
+.template-item.drag-overlay .drag-handle:active .drag-handle-dot {
+  background-color: var(--accent-color);
+}
+
+.template-item.dragging .drag-handle-dot {
+  background-color: var(--text-secondary);
 }
 
 /* Template dragging state - blue highlight */
@@ -599,11 +604,24 @@ body {
   border-radius: 2px;
 }
 
-/* グループ用Gap（変更なし、または必要に応じて調整） */
+/* グループ用Gap: 点線の枠（灰色） */
+.drop-gap-group {
+  height: 60px; /* 常に固定（座標ずれ防止） */
+  opacity: 0; /* 非アクティブ時は透明 */
+  transition: opacity 0.15s ease-out;
+}
+
 .drop-gap-group.active {
-  height: 60px;
-  border: 2px dashed var(--accent-color);
+  opacity: 1;
+  border: 2px dashed #6a6a68; /* 灰色の点線 */
   border-radius: var(--border-radius);
-  background-color: rgba(74, 158, 255, 0.05);
+  background-color: rgba(106, 106, 104, 0.08); /* 灰色の半透明背景 */
   margin: 8px 0;
+}
+
+/* ドラッグ中のグループを視覚的に非表示（完全に消す） */
+.group-item.dragging {
+  opacity: 0;
+  pointer-events: none;
+  /* display: none は使わない（DragOverlayに影響するため） */
 }
