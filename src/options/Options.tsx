@@ -153,34 +153,63 @@ const Options: React.FC = () => {
   //* グループのドラッグ終了処理
   const handleGroupDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
+    const activeId = parseInt(String(active.id).replace('group-', ''), 10);
+    
+    // 状態リセット（これによりDragOverlayのアニメーションが開始される）
     setActiveGroupId(null);
     setActiveGroupGapId(null);
-    
-    // ドラッグ後にグループを再展開
-    const activeId = parseInt(String(active.id).replace('group-', ''), 10);
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
-      next.add(activeId);
-      return next;
-    });
 
-    if (!over) return;
+    if (!over) {
+      // ドロップ失敗時もアニメーション完了を待ってから展開
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setExpandedGroups(prev => {
+        const next = new Set(prev);
+        next.add(activeId);
+        return next;
+      });
+      return;
+    }
     
     const activeIdStr = String(active.id);
     const overIdStr = String(over.id);
 
-    if (!activeIdStr.startsWith('group-') || !overIdStr.startsWith('group-gap-')) return;
+    if (!activeIdStr.startsWith('group-') || !overIdStr.startsWith('group-gap-')) {
+      // 無効なドロップでもアニメーション完了を待つ
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setExpandedGroups(prev => {
+        const next = new Set(prev);
+        next.add(activeId);
+        return next;
+      });
+      return;
+    }
 
     // gap-IDからターゲットインデックスを抽出
     const targetIndex = parseInt(overIdStr.replace('group-gap-', ''), 10);
-    if (isNaN(targetIndex)) return;
+    if (isNaN(targetIndex)) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setExpandedGroups(prev => {
+        const next = new Set(prev);
+        next.add(activeId);
+        return next;
+      });
+      return;
+    }
 
     const activeGroupId = parseInt(activeIdStr.replace('group-', ''), 10);
     
     const oldIndex = groups.findIndex(g => g.id === activeGroupId);
     let newIndex = targetIndex; 
 
-    if (oldIndex < 0 || oldIndex === newIndex) return;
+    if (oldIndex < 0 || oldIndex === newIndex) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setExpandedGroups(prev => {
+        const next = new Set(prev);
+        next.add(activeId);
+        return next;
+      });
+      return;
+    }
     
     // arrayMoveの挙動に合わせて、挿入位置の調整
     const insertIndex = oldIndex < newIndex ? newIndex - 1 : newIndex;
@@ -189,10 +218,19 @@ const Options: React.FC = () => {
 
     setGroups(newOrder.map((g, i) => ({ ...g, order: i })));
     
+    // アニメーション完了を待ってからデータ永続化とグループ展開
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
     await s.reorderGroups(newOrder.map(g => g.id));
-    await loadData(); // 永続化後のデータ再ロード
+    await loadData();
+    
+    // データロード完了後にグループを展開
+    setExpandedGroups(prev => {
+      const next = new Set(prev);
+      next.add(activeId);
+      return next;
+    });
   };
-
   //* テンプレートのドラッグ終了処理
   const handleTemplateDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;

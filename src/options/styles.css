@@ -575,7 +575,7 @@ body {
 
 /* テンプレート間のドロップギャップ */
 .drop-gap-template {
-    height: 10px; /* ヒット判定領域の広さ */
+    height: 5px; /* ヒット判定領域の広さ */
     width: 100%;
     display: flex;
     align-items: center;
