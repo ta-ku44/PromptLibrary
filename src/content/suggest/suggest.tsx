@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import './styles.scss';
 import { loadStoredData } from '../../utils/storage.ts';
-import type { Template, /*Group,*/ StorageData } from '../../types/index';
+import type { Template, Group } from '../../types/index';
 
 let root: Root | null = null;
 let container: HTMLElement | null = null;
@@ -36,15 +36,15 @@ export const showSuggest = async ({ query, curInputEl, insertText }: ShowSuggest
 
   root?.render(
     <Suggest
-      data={{ ...data }}
+      templates={templates}
+      groups={data.groups}
       inputEl={curInputEl}
       onSelect={insertText}
       onClose={hideSuggest}
     />
   );
 
-  setSuggestPos(curInputEl, data);
-  console.log('サジェストを表示しました');
+  setSuggestPos(curInputEl);
 };
 
 //* サジェストを非表示
@@ -57,44 +57,49 @@ export const hideSuggest = () => {
     container.remove();
     container = null;
   }
-
-  console.log('サジェストを非表示にしました');
 };
 
 //* サジェストの位置を設定
-const setSuggestPos = (el: HTMLElement, data: StorageData) => {
+const setSuggestPos = (el: HTMLElement) => {
   if (!container) return;
   // サジェストの位置を計算
   const rect = el.getBoundingClientRect();
   const viewportHeight = window.innerHeight;
 
-  // 新規チャットか否か
-  const topRatio = (rect.top / viewportHeight) > 0.75;
-  if (topRatio) {
-    // TODO: 新規チャットでメッセージがある場合の位置調整
-    container.style.top = `${window.scrollY + rect.top - container.offsetHeight}px`;
+  let left: number;
+  const selection = window.getSelection();
+  if (selection && selection.rangeCount > 0) {
+    const r = selection.getRangeAt(0).getBoundingClientRect();
+    left = r.left !== 0 ? r.left : rect.left;
   } else {
-    // TODO: 既存チャットの位置調整
-    container.style.top = `${window.scrollY + rect.bottom}px`;
+    left = rect.left;
   }
-  console.log('サジェスト位置を更新:', data)
+
+  const suggestHeight = container.offsetHeight;
+  const showAbove = rect.top / viewportHeight > 0.75;
+
+  container.style.left = `${window.scrollX + left}px`;
+  container.style.top = showAbove
+    ? `${window.scrollY + rect.top - suggestHeight - 15}px` // 15px: バッファ
+    : `${window.scrollY + rect.bottom}px`;
 };
 
 interface SuggestProps {
-  data: StorageData;
+  templates: Template[];
+  groups: Group[];
   inputEl: HTMLElement;
   onSelect: (template: Template) => void;
   onClose: () => void;
 }
 
-const Suggest: React.FC<SuggestProps> = ({ data, inputEl, onSelect, onClose }) => {
+const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect, onClose }) => {
   const suggestRef = React.useRef<HTMLDivElement>(null);
   // const [selectedIndex, setSelectedIndex] = React.useState(0);
   
   const groupedData = useMemo(() => {
     const groupMap = new Map<number | null, Template[]>();
 
-    data.templates.forEach(template => {
+    templates.forEach(template => {
       const groupId = template.groupId ?? null;
       if (!groupMap.has(groupId)) {
         groupMap.set(groupId, []);
@@ -102,18 +107,18 @@ const Suggest: React.FC<SuggestProps> = ({ data, inputEl, onSelect, onClose }) =
       groupMap.get(groupId)!.push(template);
     });
     return groupMap;
-  }, [data.templates]);
+  }, [templates]);
 
   const getGroupName = (groupId: number | null): string => {
     if (groupId === null) return 'other';
-    const group = data.groups.find(g => g.id === groupId);
+    const group = groups.find(g => g.id === groupId);
     return group?.name ?? 'other';
   };
 
   // 入力欄やサイトのリサイズ・スクロールに合わせて位置を更新
   useEffect(() => {
     const updatePosition = () => {
-      setSuggestPos(inputEl, data);
+      setSuggestPos(inputEl);
     };
     const observer = new ResizeObserver(() => {
         updatePosition();
@@ -180,8 +185,8 @@ const Suggest: React.FC<SuggestProps> = ({ data, inputEl, onSelect, onClose }) =
             if (groupIdA === null) return 1;
             if (groupIdB === null) return -1;
             
-            const groupA = data.groups.find(g => g.id === groupIdA);
-            const groupB = data.groups.find(g => g.id === groupIdB);
+            const groupA = groups.find(g => g.id === groupIdA);
+            const groupB = groups.find(g => g.id === groupIdB);
             return (groupA?.order ?? 0) - (groupB?.order ?? 0);
           })
           .map(([groupId, tmplList]) => (
