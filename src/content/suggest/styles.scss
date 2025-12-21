@@ -5,8 +5,9 @@
   --suggest-scrollbar-thumb: #CBD5DD;
   --suggest-group-header-color: #898E96;
   --suggest-item-color: #19234E;
-  --suggest-item-hover-bg: #E5F0FF;
+  --suggest-item-hover-bg: #F2F8FF;
   --suggest-item-hover-color: #111827;
+  --suggest-item-keyboard-bg: #DDEEFF;
 }
 
 :root[theme="dark"] {
@@ -18,6 +19,7 @@
   --suggest-item-color: #F3F4F6;
   --suggest-item-hover-bg: #374151;
   --suggest-item-hover-color: #ffffff;
+  --suggest-item-keyboard-bg: #3B82F6;
 }
 
 .suggest {
@@ -32,7 +34,7 @@
     font-family: 'Helvetica Neue', Arial, sans-serif;
   }
 
-  &__list {
+  &__groupItems {
     max-height: 300px;
     overflow-y: auto;
     padding-bottom: 4px;
@@ -67,7 +69,7 @@
     z-index: 6;
   }
 
-  &__item {
+  &__templateItem {
     padding: 6px 12px;
     margin: 0 4px;
     font-size: 16.75px;
@@ -77,10 +79,17 @@
     transition: background-color 0.12s ease;
     background-color: var(--suggest-bg);
 
-    &:hover,
-    &--selected {
+    &.is-hovered {
       background-color: var(--suggest-item-hover-bg);
       color: var(--suggest-item-hover-color);
+    }
+
+    &.is-keyboard-selected {
+      background-color: var(--suggest-item-keyboard-bg);
+    }
+
+    &.is-keyboard-selected.is-hovered {
+      background-color: var(--suggest-item-keyboard-bg);
     }
 
     &:last-child {
