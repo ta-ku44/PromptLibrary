@@ -1,11 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import './styles.scss';
 import { loadStoredData } from '../../utils/storage';
-import type { Template, Group } from '../../types';
+import type { Template, Group, StorageData } from '../../types';
 
 let root: Root | null = null;
 let rootEl: HTMLElement | null = null;
+let cachedData: StorageData | null = null;
+let cachePromise: Promise<StorageData> | null = null;
 
 interface ShowSuggestParams {
   query: string;
@@ -16,23 +18,24 @@ interface ShowSuggestParams {
 //* サジェストを表示
 export const showSuggest = async ({ query, curInputEl, onInsert }: ShowSuggestParams): Promise<void> => {
   if (!curInputEl) return;
-
-  const data = await loadStoredData();
+  const data = await getCachedData();
   const templates = data.templates.filter(t =>
     t.name.toLowerCase().includes(query.toLowerCase())
   );
-  if (!templates.length) return;
-  console.log('表示するテンプレート:', templates);
+  if (!templates.length) {
+    hideSuggest();
+    return;
+  }
+
   if (!rootEl) {
     rootEl = Object.assign(document.createElement('div'), {
       id: 'pt-suggest-root',
-      style: `position:absolute;z-index:${Number.MAX_SAFE_INTEGER}`
+      style: `position:absolute;z-index:${Number.MAX_SAFE_INTEGER};visibility:hidden`
     });
     document.body.appendChild(rootEl);
     root = createRoot(rootEl);
   }
 
-  setPos(curInputEl);
   root?.render(
     <Suggest
       templates={templates}
@@ -66,8 +69,27 @@ const setPos = (el: HTMLElement) => {
 
   rootEl.style.left = `${window.scrollX + left}px`;
   rootEl.style.top = showAbove
-    ? `${window.scrollY + rect.top - height - 15}px` // 15px:バッファ
+    ? `${window.scrollY + rect.top - height - 15}px`
     : `${window.scrollY + rect.bottom}px`;
+};
+
+//* キャッシュされたデータを取得
+const getCachedData = async (): Promise<StorageData> => {
+  if (cachedData) return cachedData;
+  if (cachePromise) return cachePromise;
+
+  cachePromise = loadStoredData().then(data => {
+    cachedData = data;
+    cachePromise = null;
+    return data;
+  });
+
+  return cachePromise;
+};
+
+//* キャッシュをクリア
+export const clearSuggestCache = () => {
+  cachedData = null;
 };
 
 interface SuggestProps {
@@ -79,17 +101,14 @@ interface SuggestProps {
 }
 
 const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect, onClose }) => {
-  // 参照用のRef
   const suggestRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
-  // セレクト状態の管理
   const [keyboardSelectedId, setKeyboardSelectedId] = useState<number | null>(null);
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [isKeyboardMode, setIsKeyboardMode] = useState(true);
 
-  // グループごとにテンプレートを分類
   const groupedData = useMemo(() => {
     const map = new Map<number | null, Template[]>();
     const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
@@ -107,6 +126,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
         map.get(null)!.push(t);
       }
     });
+
     for (const [key, value] of map.entries()) {
       if (value.length === 0) {
         map.delete(key);
@@ -116,7 +136,6 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     return map;
   }, [templates, groups]);
 
-  // グループ名を取得
   const getGroupName = (id: number | null) =>
     id === null
       ? 'other'
@@ -128,7 +147,6 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     );
   }, [groupedData]);
 
-  // 最初のアイテムを選択状態にする
   useEffect(() => {
     if (flatTemplates.length) {
       setKeyboardSelectedId(flatTemplates[0].id);
@@ -136,25 +154,32 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     }
   }, [flatTemplates]);
 
+  useLayoutEffect(() => {
+    setPos(inputEl);
+    if (rootEl) {
+      rootEl.style.visibility = 'visible';
+    }
+  }, [inputEl]);
+
   // リサイズ・スクロール時に位置を更新
   useEffect(() => {
     const update = () => setPos(inputEl);
     const ro = new ResizeObserver(update);
     ro.observe(inputEl);
     window.addEventListener('resize', update);
-    window.addEventListener('scroll', update);
+    window.addEventListener('scroll', update, true);
     return () => {
       ro.disconnect();
       window.removeEventListener('resize', update);
-      window.removeEventListener('scroll', update);
+      window.removeEventListener('scroll', update, true);
     };
   }, [inputEl]);
 
-  // 選択・確定をキーボードで操作
   useEffect(() => {
     const onKeyDownCapture = (e: KeyboardEvent) => {
       if (!flatTemplates.length || keyboardSelectedId == null) return;
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        console.time('keyboard-update');
         setIsKeyboardMode(true);
         e.preventDefault();
         e.stopPropagation();
@@ -167,6 +192,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
         if (e.key === 'ArrowUp' && idx > 0) {
           setKeyboardSelectedId(flatTemplates[idx - 1].id);
         }
+        console.timeEnd('keyboard-update');
       }
 
       if (e.key === 'Tab') {
@@ -183,9 +209,9 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
       window.removeEventListener('keydown', onKeyDownCapture, true);
   }, [flatTemplates, keyboardSelectedId, onSelect]);
 
-  // 選択アイテムをスクロール位置に合わせる
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (keyboardSelectedId == null) return;
+    console.time('scroll-sync');
 
     const itemEl = itemRefs.current.get(keyboardSelectedId);
     const listEl = listRef.current;
@@ -213,9 +239,9 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
       const targetScroll = listEl.scrollTop + (itemRelativeBottom - centerZoneEnd);
       listEl.scrollTop = Math.min(listEl.scrollHeight - listHeight, targetScroll);
     }
+    console.timeEnd('scroll-sync');
   }, [keyboardSelectedId, flatTemplates]);
 
-  // マウスクリック・Escで閉じる
   useEffect(() => {
     const close = (e: MouseEvent | KeyboardEvent) => {
       if (
@@ -234,7 +260,6 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     };
   }, [onClose]);
 
-  // マウス操作があったらキーボードモードを解除
   useEffect(() => {
     const onMouseMove = () => {
       setIsKeyboardMode(false);

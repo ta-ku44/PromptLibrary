@@ -22,7 +22,6 @@
   --suggest-item-keyboard-bg: #3B82F6;
 }
 
-/* サジェスト */
 .suggest {
   &__container {
     width: 280px;
@@ -39,6 +38,7 @@
     max-height: 300px;
     overflow-y: auto;
     padding-bottom: 4px;
+    scroll-behavior: auto;
 
     &::-webkit-scrollbar {
       width: 8px;
@@ -77,19 +77,23 @@
     color: var(--suggest-item-color);
     cursor: pointer;
     border-bottom: 1px solid var(--suggest-border);
-    transition: background-color 0.12s ease;
     background-color: var(--suggest-bg);
+    
+    // パフォーマンス最適化
+    will-change: background-color;
+    contain: layout style paint;
 
-    &.is-hovered {
+    transition: none;
+
+    // マウスホバー時のみ軽いトランジション
+    &.is-hovered:not(.is-keyboard-selected) {
       background-color: var(--suggest-item-hover-bg);
       color: var(--suggest-item-hover-color);
+      transition: background-color 0.08s ease;
     }
 
+    // キーボード選択は即座に反映
     &.is-keyboard-selected {
-      background-color: var(--suggest-item-keyboard-bg);
-    }
-
-    &.is-keyboard-selected.is-hovered {
       background-color: var(--suggest-item-keyboard-bg);
     }
 

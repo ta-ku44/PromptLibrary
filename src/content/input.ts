@@ -113,7 +113,7 @@ export class InputHandler {
     return "standard";
   };
 
-  //* ProseMirrorタイプを返す
+  //* ProseMirrorの種類を判定
   private detectProseMirrorType(el: HTMLDivElement): "tiptap" | "prosemirror" | "unknown" {
     if (!el.isContentEditable) return "unknown";
     if (!el.classList.contains("ProseMirror")) return "unknown";

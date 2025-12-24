@@ -2,9 +2,11 @@ export class DomObserver {
   private curTextArea: HTMLElement | null = null;
   private observer: MutationObserver | null = null;
   private onFound: (el: HTMLElement) => void;
+  private onLost?: () => void;
 
-  constructor(opts: { onFound: (el: HTMLElement) => void }) {
+  constructor(opts: { onFound: (el: HTMLElement) => void; onLost?: () => void; }) {
     this.onFound = opts.onFound;
+    this.onLost = opts.onLost;
   }
 
   //* 監視を開始
@@ -18,11 +20,10 @@ export class DomObserver {
       if (this.curTextArea && !document.body.contains(this.curTextArea)) {
         console.log('現在の入力欄がDOMから削除された');
         this.curTextArea = null;
+        this.onLost?.();
       }
-
       this.assignTextArea();
     });
-
     this.observer.observe(document.body, { childList: true, subtree: true });
   };
 
@@ -47,11 +48,11 @@ export class DomObserver {
     }
   };
 
-  //* テキストエリアを探索
+  //* テキストエリアまたはコンテンツエディタブル要素を検索
   private findTextAreas = (): HTMLElement | null => {
     const selectors = [
-      '[contenteditable="true"]', // contenteditableを探索
-      'textarea:not([disabled]):not([readonly])', // textareaを探索
+      '[contenteditable="true"]',
+      'textarea:not([disabled]):not([readonly])',
     ];
 
     for (const s of selectors) {
@@ -64,7 +65,7 @@ export class DomObserver {
     return null;
   };
 
-  //* 入力欄が有効かチェック
+  //* 要素が有効な入力欄かどうかを判定
   private isValidInput = (element: HTMLElement): boolean => {
     if (!element || !element.isConnected) return false;
     
@@ -74,6 +75,6 @@ export class DomObserver {
           style.visibility !== 'hidden' &&
           element.offsetParent !== null &&
           rect.width > 0 &&
-          rect.height > 0
+          rect.height > 0;
   };
 }

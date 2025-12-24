@@ -1,6 +1,6 @@
 import { DomObserver } from './dom.ts';
 import { InputHandler } from './input.ts';
-import { showSuggest, hideSuggest } from './suggest/suggest.tsx';
+import { showSuggest, hideSuggest, clearSuggestCache } from './suggest/suggest.tsx';
 import browser from 'webextension-polyfill';
 
 let key = '#';
@@ -9,33 +9,47 @@ let curInputEl: HTMLElement | null = null;
 
 const init = async () => {
   await loadKey();
-  // DOM監視を開始
+
   const domObserver = new DomObserver({
     onFound: (el) => {
+      if (curInputEl === el) return;
       console.log('入力欄を検出しInputHandlerを初期化:', el);
-      if (curInputEl !== el){
-        if (curInputEl && inputHandler) {
-          curInputEl.removeEventListener('input', inputHandler.handleInput);
-          hideSuggest();
-        }
-        curInputEl = el;
-        inputHandler = new InputHandler(curInputEl as HTMLTextAreaElement | HTMLDivElement, key, (query) => {
+      cleanup();
+      curInputEl = el;
+      inputHandler = new InputHandler(
+        curInputEl as HTMLTextAreaElement | HTMLDivElement,
+        key,
+        (query) => {
           if (query !== null) {
-            showSuggest({ query, curInputEl, onInsert: (template) => { inputHandler?.insertPrompt(template);} });
+            showSuggest({query, curInputEl, onInsert: (template) => inputHandler?.insertPrompt(template)});
           } else {
             hideSuggest();
           }
-        });
+        }
+      );
       curInputEl.addEventListener('input', inputHandler.handleInput);
-      }
     },
+    onLost: () => {
+      console.log('入力欄が削除されたためクリーンアップを実行');
+      cleanup();
+    }
   });
+
   domObserver.start();
 
   window.addEventListener('beforeunload', () => {
     domObserver.stop();
-    hideSuggest();
+    cleanup();
   });
+};
+
+const cleanup = () => {
+  if (curInputEl && inputHandler) {
+    curInputEl.removeEventListener('input', inputHandler.handleInput);
+  }
+  hideSuggest();
+  inputHandler = null;
+  curInputEl = null;
 };
 
 const loadKey = async () => {
@@ -47,15 +61,17 @@ const loadKey = async () => {
   }
 };
 
-//* ショートカットキー変更を監視 */
 browser.storage.onChanged.addListener((changes, area) => {
-  if (area !== 'sync' && !changes.data) return;
-  const newKey = (changes.data.newValue as { shortcutKey: string }).shortcutKey;
-  if (typeof newKey === 'string') {
-    key = newKey;
-    console.log('ショートカットキー更新:', key);
-    if (inputHandler) {
-      inputHandler.updateKey(key);
+  if (area !== 'sync') return;
+  if (changes.data) {
+    clearSuggestCache();
+    const newKey = (changes.data.newValue as { shortcutKey: string })?.shortcutKey;
+    if (typeof newKey === 'string') {
+      key = newKey;
+      console.log('ショートカットキー更新:', key);
+      if (inputHandler) {
+        inputHandler.updateKey(key);
+      }
     }
   }
 });
