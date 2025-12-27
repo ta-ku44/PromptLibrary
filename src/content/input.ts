@@ -69,7 +69,7 @@ export class InputHandler {
     return this.cachedRegex;
   }
 
-  //* マッチ部分をコンテンツで置換
+  //* マッチ部分をプロンプトに置換
   private replaceMatchesWithContent(text: string, content: string): string {
     const regex = this.getRegex();
     return text.replace(regex, (match) => {
@@ -119,7 +119,7 @@ export class InputHandler {
   private insertIntoLexical = (el: HTMLDivElement, text: string): boolean => {
     try {
       console.log('Lexicalに挿入', el, text);
-      
+      // TODO: Lexicalの挿入方法を調査・実装
       return true;
     } catch (error) {
       console.log('Lexicalの挿入に失敗:', error);
