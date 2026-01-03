@@ -63,18 +63,13 @@ export class InputProcessor {
     return this.cachedRegex;
   }
 
-  //* マッチ部分をプロンプトに置換
-  private replaceMatchesWithContent(text: string, content: string): string {
-    const regex = this.getRegex();
-    return text.replace(regex, (match) => {
-      const leadingSpace = match.startsWith(' ') ? ' ' : '';
-      return leadingSpace + content;
-    });
-  }
-
   //* TextAreaへの挿入処理
   private insertIntoTextArea(el: HTMLTextAreaElement, prompt: string) {
-    const newText = this.replaceMatchesWithContent(el.value, prompt);
+    const currentText = el.value;
+    const newText = currentText.replace(this.getRegex(), (match) => {
+      const leadingSpace = match.startsWith(' ') ? ' ' : '';
+      return leadingSpace + prompt;
+    });
     el.value = newText;
     el.selectionStart = el.selectionEnd = newText.length;
     el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -89,9 +84,8 @@ export class InputProcessor {
     if (editorType === 'ProseMirror') {
       this.handleProseMirrorInsert(el, prompt);
     } else if (editorType === 'Lexical') {
+      this.removeMatchedText(el);
       this.insertViaInputEvent(el, prompt);
-    } else if (editorType === 'Block-based') {
-      // TODO: ブロックベースのエディタへの対応
     } else {
       console.log('unknown editor type, using execCommand insertion');
       this.insertViaExecCommand(el, prompt) || this.fallbackInsert(el, prompt);
@@ -110,6 +104,47 @@ export class InputProcessor {
     }
   }
 
+  private removeMatchedText(el: HTMLDivElement) {
+    const text = el.innerText;
+    const newText = text.replace(this.getRegex(), (match) => {
+      return match.startsWith(' ') ? ' ' : '';
+    });
+    el.innerText = newText;
+    this.moveCursorToEnd(el);
+  }
+
+  //* execCommandで挿入
+  private insertViaExecCommand(el: HTMLDivElement, text: string): boolean {
+    if (!text) return false;
+    try {
+      // match部分を削除してからテキストを挿入
+      this.removeMatchedText(el);
+      const success = document.execCommand('insertText', false, text);
+      if (success) el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+      return success;
+    } catch (error) {
+      console.log('execCommandによる挿入に失敗:', error);
+      return false;
+    }
+  }
+
+  //* innerTextで挿入
+  private insertAsPlainText = (el: HTMLDivElement, prompt: string) => {
+    try {
+      const text = el.innerText;
+      const newText = text.replace(this.getRegex(), (match) => {
+        const leadingSpace = match.startsWith(' ') ? ' ' : '';
+        return leadingSpace + prompt;
+      });
+      el.innerText = newText;
+      this.moveCursorToEnd(el);
+      el.dispatchEvent(new InputEvent('input', { bubbles: true }));
+    } catch (error) {
+      console.log('innerTextによる挿入に失敗:', error);
+    }
+  };
+
+  //* InputEventで挿入
   private insertViaInputEvent(el: HTMLDivElement, text: string): boolean {
     el.focus();
 
@@ -142,35 +177,10 @@ export class InputProcessor {
 
       return true;
     } catch (error) {
-      console.error(':', error);
+      console.error('InputEventによる挿入に失敗:', error);
       return false;
     }
   }
-
-  //* execCommandで挿入
-  private insertViaExecCommand(el: HTMLDivElement, text: string): boolean {
-    if (!text) return false;
-    try {
-      this.moveCursorToEnd(el);
-      const success = document.execCommand('insertText', false, text);
-      if (success) el.dispatchEvent(new InputEvent('input', { bubbles: true }));
-      return success;
-    } catch (error) {
-      console.log('execCommandによる挿入に失敗:', error);
-      return false;
-    }
-  }
-
-  //* innerTextで挿入
-  private insertAsPlainText = (el: HTMLDivElement, text: string) => {
-    try {
-      el.innerText = text;
-      this.moveCursorToEnd(el);
-      el.dispatchEvent(new InputEvent('input', { bubbles: true }));
-    } catch (error) {
-      console.log('innerTextによる挿入に失敗:', error);
-    }
-  };
 
   //* フォールバック挿入
   private fallbackInsert(el: HTMLDivElement, text: string) {
@@ -203,14 +213,13 @@ export class InputProcessor {
   }
 }
 
-type EditorType = 'Lexical' | 'ProseMirror' | 'Block-based' | 'unknown';
+type EditorType = 'Lexical' | 'ProseMirror' | 'unknown';
 type ProseMirrorType = 'tiptap' | 'prosemirror';
 
 //* エディタータイプを返す
 const detectEditorType = (el: HTMLDivElement): EditorType => {
   if (el.closest('.ProseMirror')) return 'ProseMirror';
   if (el.closest('[data-lexical-editor]')) return 'Lexical';
-  if (el.closest('[data-content-editable-leaf="true"]')) return 'Block-based';
   return 'unknown';
 };
 
