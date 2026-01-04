@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Invoke Prompts from Templates",
+  "name": "Prompt Library",
   "version": "1.0.0",
   "description": "",
   "permissions": ["storage"],

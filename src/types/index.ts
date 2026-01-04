@@ -1,12 +1,12 @@
 export interface Template {
   id: number;
-  groupId: number | null;
+  categoryId: number | null;
   name: string;
   content: string;
   order: number;
 }
 
-export interface Group {
+export interface Category {
   id: number;
   name: string;
   order: number;
@@ -14,6 +14,6 @@ export interface Group {
 
 export interface StorageData {
   templates: Template[];
-  groups: Group[];
+  categories: Category[];
   shortcutKey: string;
 }

@@ -52,8 +52,8 @@ body {
   }
 }
 
-/* グループ範囲 */
-.group-area {
+/* カテゴリ範囲 */
+.category-area {
   border: 2px dashed var(--border-color);
   border-radius: 12px;
   padding: 16px;
@@ -67,13 +67,13 @@ body {
   }
 }
 
-.group-area__header {
+.category-area__header {
   display: flex;
   justify-content: flex-start;
   margin-bottom: 12px;
 }
 
-.group-area__list {
+.category-area__list {
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -88,7 +88,7 @@ body {
   align-items: center;
   justify-content: center;
 
-  &--add-group {
+  &--add-category {
     gap: 8px;
     background-color: var(--accent-color);
     color: white;
@@ -174,8 +174,8 @@ body {
   }
 }
 
-/* グループ */
-.group {
+/* カテゴリ */
+.category {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
@@ -198,7 +198,7 @@ body {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
     opacity: 0.95;
 
-    .group__header {
+    .category__header {
       background-color: var(--bg-tertiary) !important;
       cursor: grabbing;
     }
@@ -210,7 +210,7 @@ body {
   }
 }
 
-.group__header {
+.category__header {
   display: flex;
   align-items: center;
   padding: 12px 16px;
@@ -224,7 +224,7 @@ body {
     cursor: grabbing;
   }
 
-  &:not(.group__header--template-dragging):hover {
+  &:not(.category__header--template-dragging):hover {
     background-color: var(--bg-tertiary);
   }
 
@@ -237,18 +237,18 @@ body {
   }
 }
 
-.group__name {
+.category__name {
   flex: 1;
   font-size: 15px;
   font-weight: 500;
   color: var(--text-primary);
 }
 
-.group__name-text {
+.category__name-text {
   cursor: text;
 }
 
-.group__name-input {
+.category__name-input {
   flex: 1;
   background-color: var(--bg-tertiary);
   border: 1px solid var(--accent-color);
@@ -260,12 +260,12 @@ body {
   outline: none;
 }
 
-.group__actions {
+.category__actions {
   display: flex;
   gap: 8px;
 }
 
-.group__templates {
+.category__templates {
   padding: 8px 16px 16px 32px;
   display: flex;
   flex-direction: column;
@@ -408,7 +408,7 @@ body {
     }
   }
 
-  &--group {
+  &--category-gap {
     height: 0;
     margin: 0;
     opacity: 0;
@@ -560,7 +560,7 @@ body {
   }
 }
 
-/* グループもテンプレートも空の状態 */
+/* カテゴリもテンプレートも空の状態 */
 .empty-state {
   text-align: center;
   padding: 48px 24px;

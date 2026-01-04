@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { createRoot, type Root } from 'react-dom/client';
 import getCaretCoordinates from 'textarea-caret';
 import { loadStoredData } from '../utils/storage';
-import type { Template, Group, StorageData } from '../types';
+import type { Template, Category, StorageData } from '../types';
 import './styles.scss';
 
 let root: Root | null = null;
@@ -27,7 +27,7 @@ export const showSuggest = async (
 
   if (!rootEl) {
     rootEl = Object.assign(document.createElement('div'), {
-      id: 'pt-suggest-root',
+      id: 'pl-suggest-root',
       style: `position:absolute;z-index:${Number.MAX_SAFE_INTEGER};visibility:hidden;`,
     });
 
@@ -38,7 +38,7 @@ export const showSuggest = async (
   root?.render(
     <Suggest
       templates={templates}
-      groups={data.groups}
+      categories={data.categories}
       inputEl={curInputEl}
       onSelect={onInsert}
       onClose={hideSuggest}
@@ -112,13 +112,13 @@ export const clearCachedData = () => {
 
 interface SuggestProps {
   templates: Template[];
-  groups: Group[];
+  categories: Category[];
   inputEl: HTMLElement;
   onSelect: (template: Template) => void;
   onClose: () => void;
 }
 
-const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect, onClose }) => {
+const Suggest: React.FC<SuggestProps> = ({ templates, categories, inputEl, onSelect, onClose }) => {
   const suggestRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -127,18 +127,18 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   const [isKeyboardMode, setIsKeyboardMode] = useState(true);
 
-  // グループごとにテンプレートを分類
-  const groupedData = useMemo(() => {
+  // カテゴリごとにテンプレートを分類
+  const categorizedData = useMemo(() => {
     const map = new Map<number | null, Template[]>();
-    const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
+    const sortedCategories = [...categories].sort((a, b) => a.order - b.order);
 
-    sortedGroups.forEach((g) => {
-      map.set(g.id, []);
+    sortedCategories.forEach((c) => {
+      map.set(c.id, []);
     });
     map.set(null, []);
 
     templates.forEach((t) => {
-      const id = t.groupId ?? null;
+      const id = t.categoryId ?? null;
       if (map.has(id)) {
         map.get(id)!.push(t);
       } else {
@@ -153,15 +153,15 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
     }
 
     return map;
-  }, [templates, groups]);
+  }, [templates, categories]);
 
-  // グループ名を取得
-  const getGroupName = (id: number | null) =>
-    id === null ? 'other' : (groups.find((g) => g.id === id)?.name ?? 'other');
+  // カテゴリ名を取得
+  const getCategoryName = (id: number | null) =>
+    id === null ? 'other' : (categories.find((c) => c.id === id)?.name ?? 'other');
 
   const flatTemplates = useMemo(() => {
-    return Array.from(groupedData.values()).flatMap((list) => list.slice().sort((a, b) => a.order - b.order));
-  }, [groupedData]);
+    return Array.from(categorizedData.values()).flatMap((list) => list.slice().sort((a, b) => a.order - b.order));
+  }, [categorizedData]);
 
   useEffect(() => {
     if (flatTemplates.length) {
@@ -285,10 +285,10 @@ const Suggest: React.FC<SuggestProps> = ({ templates, groups, inputEl, onSelect,
 
   return (
     <div className="suggest__container" ref={suggestRef}>
-      <div className="suggest__groupItems" ref={listRef}>
-        {Array.from(groupedData.entries()).map(([groupId, list]) => (
-          <div key={groupId ?? 'other'}>
-            <div className="suggest__group-header">{getGroupName(groupId)}</div>
+      <div className="suggest__categoryItems" ref={listRef}>
+        {Array.from(categorizedData.entries()).map(([categoryId, list]) => (
+          <div key={categoryId ?? 'other'}>
+            <div className="suggest__category-header">{getCategoryName(categoryId)}</div>
             {list
               .slice()
               .sort((a, b) => a.order - b.order)

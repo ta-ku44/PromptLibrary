@@ -1,5 +1,5 @@
 {
-  "name": "invoke-prompts-from-templates",
+  "name": "prompt-library",
   "private": true,
   "version": "0.0.0",
   "type": "module",

@@ -1,59 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import type { Group, Template } from '../../types/index.ts';
+import type { Category, Template } from '../../types/index.ts';
 import Icons from '../assets/icons.ts';
 import TemplateRow from './TemplateRow.tsx';
 import DropGap from './DropGap.tsx';
 
-interface GroupPanelProps {
-  group: Group;
+const OTHER_CATEGORY_ID = -1; // Otherカテゴリのid
+
+interface CategoryPanelProps {
+  category: Category;
   templates: Template[];
   isExpanded: boolean;
   onToggle: () => void;
   onEdit: (template: Template) => void;
   onDeleteTemplate: (id: number) => void;
   onTemplateNameChange: (id: number, name: string) => void;
-  onGroupNameChange: (id: number, name: string) => void;
-  onDeleteGroup: (id: number) => void;
-  onAddTemplate: (groupId: number) => void;
+  onCategoryNameChange: (id: number, name: string) => void;
+  onDeleteCategory: (id: number) => void;
+  onAddTemplate: (categoryId: number) => void;
   startEditing?: boolean;
   onEditingComplete?: () => void;
   activeTemplateId?: number | null;
   activeGapId?: string | null;
-  groupDraggableId?: string;
-  isGroupDragging?: boolean;
-  isAnyGroupDragging?: boolean;
+  categoryDraggableId?: string;
+  isCategoryDragging?: boolean;
+  isAnyCategoryDragging?: boolean;
 }
 
-const GroupPanel: React.FC<GroupPanelProps> = ({
-  group,
+const CategoryPanel: React.FC<CategoryPanelProps> = ({
+  category,
   templates,
   isExpanded,
   onToggle,
   onEdit,
   onDeleteTemplate,
   onTemplateNameChange,
-  onGroupNameChange,
-  onDeleteGroup,
+  onCategoryNameChange,
+  onDeleteCategory,
   onAddTemplate,
   startEditing = false,
   onEditingComplete,
   activeTemplateId = null,
   activeGapId = null,
-  isGroupDragging = false,
-  isAnyGroupDragging = false,
-  groupDraggableId,
+  isCategoryDragging = false,
+  isAnyCategoryDragging = false,
+  categoryDraggableId,
 }) => {
   const [isEditing, setIsEditing] = useState(startEditing);
-  const [editName, setEditName] = useState(group.name);
+  const [editName, setEditName] = useState(category.name);
+  const isOtherCategory = category.id === OTHER_CATEGORY_ID;
 
   const {
     setNodeRef: setDragRef,
     attributes,
     listeners,
   } = useDraggable({
-    id: groupDraggableId ?? `group-${group.id}`,
-    data: { type: 'group', groupId: group.id },
+    id: categoryDraggableId ?? `category-${category.id}`,
+    data: { type: 'category', categoryId: category.id },
+    disabled: isOtherCategory, // Otherカテゴリはドラッグ無効
   });
 
   useEffect(() => {
@@ -63,17 +67,19 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
   }, [startEditing]);
 
   const handleDoubleClick = (e: React.MouseEvent) => {
+    if (isOtherCategory) return; // Otherカテゴリは編集不可
     e.stopPropagation();
     setIsEditing(true);
-    setEditName(group.name);
+    setEditName(category.name);
   };
 
   const handleBlur = () => {
+    if (isOtherCategory) return; // Otherカテゴリは編集不可
     setIsEditing(false);
     if (!editName.trim()) {
-      setEditName(group.name);
-    } else if (editName.trim() !== group.name) {
-      onGroupNameChange(group.id, editName.trim());
+      setEditName(category.name);
+    } else if (editName.trim() !== category.name) {
+      onCategoryNameChange(category.id, editName.trim());
     }
     onEditingComplete?.();
   };
@@ -83,7 +89,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
       handleBlur();
     } else if (e.key === 'Escape') {
       setIsEditing(false);
-      setEditName(group.name);
+      setEditName(category.name);
       onEditingComplete?.();
     }
   };
@@ -91,15 +97,21 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
   const sortedTemplates = [...templates].sort((a, b) => a.order - b.order);
 
   return (
-    <div className={`group ${isGroupDragging ? 'group--dragging' : ''}`}>
-      {/* グループヘッダー */}
+    <div className={`category ${isCategoryDragging ? 'category--dragging' : ''}`}>
+      {/* カテゴリヘッダー */}
       <div
         ref={setDragRef}
-        className={`group__header ${activeTemplateId != null ? 'group__header--template-dragging' : ''}`}
+        className={`category__header ${activeTemplateId != null ? 'category__header--template-dragging' : ''}`}
         {...attributes}
         {...listeners}
+        onPointerDown={(e) => {
+          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+          console.log(
+            `[CategoryPanel] Category: ${category.name} (id=${category.id}) | Y: ${e.clientY} | elemTop: ${rect.top}`,
+          );
+        }}
         onClick={() => {
-          if (!isEditing && !isGroupDragging) onToggle();
+          if (!isEditing && !isCategoryDragging) onToggle();
         }}
       >
         <button
@@ -107,7 +119,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
           onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
-            if (!isEditing && !isGroupDragging) onToggle();
+            if (!isEditing && !isCategoryDragging) onToggle();
           }}
         >
           <Icons.ExpandMore />
@@ -116,7 +128,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
         {isEditing ? (
           <input
             type="text"
-            className="group__name-input"
+            className="category__name-input"
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
             onBlur={handleBlur}
@@ -126,45 +138,47 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
             autoFocus
           />
         ) : (
-          <div className="group__name">
+          <div className="category__name">
             <span
-              className="group__name-text"
+              className="category__name-text"
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 handleDoubleClick(e);
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              {group.name}
+              {category.name}
             </span>
           </div>
         )}
 
-        <div className="group__actions">
-          <button
-            className="button--icon button--icon--delete"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteGroup(group.id);
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            title="グループを削除"
-            tabIndex={-1}
-          >
-            <Icons.Delete />
-          </button>
+        <div className="category__actions">
+          {!isOtherCategory && (
+            <button
+              className="button--icon button--icon--delete"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteCategory(category.id);
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              title="カテゴリを削除"
+              tabIndex={-1}
+            >
+              <Icons.Delete />
+            </button>
+          )}
         </div>
       </div>
 
       {/* テンプレート一覧 */}
-      {isExpanded && !isGroupDragging && (
-        <div className="group__templates">
+      {isExpanded && !isCategoryDragging && (
+        <div className="category__templates">
           <DropGap
             type="template"
-            groupId={group.id}
+            categoryId={category.id}
             indexOrId={0}
-            isActive={activeGapId === `gap-${group.id}-0`}
-            disabled={isAnyGroupDragging}
+            isActive={activeGapId === `gap_${category.id}_0`}
+            disabled={isAnyCategoryDragging}
           />
 
           {sortedTemplates.map((template, idx) => (
@@ -175,15 +189,15 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
                 onDelete={onDeleteTemplate}
                 onNameChange={onTemplateNameChange}
                 isDragging={activeTemplateId === template.id}
-                disabled={isAnyGroupDragging}
+                disabled={isAnyCategoryDragging}
               />
 
               <DropGap
                 type="template"
-                groupId={group.id}
+                categoryId={category.id}
                 indexOrId={idx + 1}
-                isActive={activeGapId === `gap-${group.id}-${idx + 1}`}
-                disabled={isAnyGroupDragging}
+                isActive={activeGapId === `gap_${category.id}_${idx + 1}`}
+                disabled={isAnyCategoryDragging}
               />
             </React.Fragment>
           ))}
@@ -193,7 +207,7 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
               className="button button--add-template"
               onClick={(e) => {
                 e.stopPropagation();
-                onAddTemplate(group.id);
+                onAddTemplate(category.id);
               }}
               onPointerDown={(e) => e.stopPropagation()}
             >
@@ -207,4 +221,4 @@ const GroupPanel: React.FC<GroupPanelProps> = ({
   );
 };
 
-export default GroupPanel;
+export default CategoryPanel;

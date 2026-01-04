@@ -2,37 +2,39 @@ import { useState } from 'react';
 import { useSensor, useSensors, MouseSensor, TouchSensor } from '@dnd-kit/core';
 import type { DragStartEvent, DragOverEvent, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
-import type { Template, Group } from '../../types/index';
+import type { Template, Category } from '../../types/index';
+
+const OTHER_CATEGORY_ID = -1; // Otherカテゴリのid
 
 interface UseDragAndDropProps {
-  groups: Group[];
+  categories: Category[];
   templates: Template[];
-  expandedGroups: Set<number>;
-  setExpandedGroups: React.Dispatch<React.SetStateAction<Set<number>>>;
-  setGroups: React.Dispatch<React.SetStateAction<Group[]>>;
+  expandedCategories: Set<number>;
+  setExpandedCategories: React.Dispatch<React.SetStateAction<Set<number>>>;
+  setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   setTemplates: React.Dispatch<React.SetStateAction<Template[]>>;
-  reorderGroups: (groupIds: number[]) => Promise<void>;
-  moveTemplateToGroup: (templateId: number, targetGroupId: number, targetIndex: number) => Promise<void>;
-  reorderTemplates: (groupId: number, templateIds: number[]) => Promise<void>;
+  reorderCategories: (categoryIds: number[]) => Promise<void>;
+  moveTemplateToCategory: (templateId: number, targetCategoryId: number | null, targetIndex: number) => Promise<void>;
+  reorderTemplates: (categoryId: number | null, templateIds: number[]) => Promise<void>;
 }
 
 export const useDragAndDrop = ({
-  groups,
+  categories,
   templates,
-  expandedGroups,
-  setExpandedGroups,
-  setGroups,
+  expandedCategories,
+  setExpandedCategories,
+  setCategories,
   setTemplates,
-  reorderGroups,
-  moveTemplateToGroup,
+  reorderCategories,
+  moveTemplateToCategory,
   reorderTemplates,
 }: UseDragAndDropProps) => {
   // テンプレートのドラッグ状態
   const [activeTemplateId, setActiveTemplateId] = useState<number | null>(null);
   const [activeTemplateGapId, setActiveTemplateGapId] = useState<string | null>(null);
 
-  // グループのドラッグ状態
-  const [activeGroupId, setActiveGroupId] = useState<number | null>(null);
+  // カテゴリのドラッグ状態
+  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
   const [activeGroupGapId, setActiveGroupGapId] = useState<string | null>(null);
   const [wasGroupExpandedBeforeDrag, setWasGroupExpandedBeforeDrag] = useState(false);
 
@@ -44,24 +46,32 @@ export const useDragAndDrop = ({
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const idStr = String(active.id);
+    const categoriesList = categories.map((c, idx) => `Category(id=${c.id}, idx=${idx})`).join(', ');
+    console.log(`[handleDragStart] Dragging: ${idStr} | Categories: ${categoriesList}`);
 
     if (idStr.startsWith('template-')) {
       const templateId = parseInt(idStr.replace('template-', ''), 10);
       setActiveTemplateId(templateId);
-      setActiveGroupId(null);
+      setActiveCategoryId(null);
     }
 
-    if (idStr.startsWith('group-')) {
-      const groupId = parseInt(idStr.replace('group-', ''), 10);
-      setActiveGroupId(groupId);
+    if (idStr.startsWith('category-')) {
+      const categoryId = parseInt(idStr.replace('category-', ''), 10);
+
+      // Otherカテゴリはドラッグ不可
+      if (categoryId === OTHER_CATEGORY_ID) {
+        return;
+      }
+
+      setActiveCategoryId(categoryId);
       setActiveTemplateId(null);
 
-      // グループ展開状態を保存し、ドラッグ中は折りたたむ
-      const wasExpanded = expandedGroups.has(groupId);
+      // カテゴリ展開状態を保存し、ドラッグ中は折りたたむ
+      const wasExpanded = expandedCategories.has(categoryId);
       setWasGroupExpandedBeforeDrag(wasExpanded);
-      setExpandedGroups((prev) => {
+      setExpandedCategories((prev) => {
         const next = new Set(prev);
-        next.delete(groupId);
+        next.delete(categoryId);
         return next;
       });
     }
@@ -79,9 +89,20 @@ export const useDragAndDrop = ({
     const activeIdStr = String(active.id);
     const overId = String(over.id);
 
-    // グループドラッグ時の処理
-    if (activeIdStr.startsWith('group-')) {
-      if (overId.startsWith('group-gap-')) {
+    const deltaY = (activatorEvent as any)?.deltaY ?? 0;
+    const clientY = (activatorEvent as any)?.clientY ?? 0;
+
+    // カテゴリドラッグ時のみログを出力
+    if (activeIdStr.startsWith('category-')) {
+      const gapIndex = overId.startsWith('category-gap-') ? overId.replace('category-gap-', '') : 'none';
+      console.log(`[handleDragOver] Y:${clientY.toFixed(1)} Delta:${deltaY.toFixed(1)} Over:${overId} Gap:${gapIndex}`);
+    }
+
+    // カテゴリドラッグ時の処理
+    if (activeIdStr.startsWith('category-')) {
+      if (overId.startsWith('category-gap-')) {
+        const categoriesList = categories.map((c, idx) => `Category(id=${c.id}, idx=${idx})`).join(', ');
+        console.log(`[handleDragOver] ✓ Category gap detected: ${overId} | Categories: ${categoriesList}`);
         setActiveGroupGapId(overId);
       } else {
         setActiveGroupGapId(null);
@@ -92,7 +113,7 @@ export const useDragAndDrop = ({
     // テンプレートドラッグ時の処理
     if (activeIdStr.startsWith('template-')) {
       // ギャップに直接ホバーした場合
-      if (overId.startsWith('gap-')) {
+      if (overId.startsWith('gap_')) {
         setActiveTemplateGapId(overId);
         return;
       }
@@ -109,8 +130,7 @@ export const useDragAndDrop = ({
 
         const overTemplate = templates.find((t) => t.id === tid);
 
-        // groupId が null のテンプレートは移動不可
-        if (overTemplate && overTemplate.groupId !== null && activatorEvent && 'clientY' in activatorEvent) {
+        if (overTemplate && activatorEvent && 'clientY' in activatorEvent) {
           // DOM要素から位置情報を取得
           const overElement = document.querySelector(`[data-template-id="${tid}"]`);
 
@@ -122,16 +142,18 @@ export const useDragAndDrop = ({
             // ポインターが要素の中心より下なら'after'、上なら'before'
             const position = pointerY > centerY ? 'after' : 'before';
 
-            // 同じグループ内のテンプレート一覧を取得
-            const groupTemplates = templates
-              .filter((t) => t.groupId === overTemplate.groupId)
+            // 同じカテゴリ内のテンプレート一覧を取得（categoryId: null の場合は OTHER_CATEGORY_ID で管理）
+            const overCategoryId = overTemplate.categoryId ?? OTHER_CATEGORY_ID;
+            const categoryTemplates = templates
+              .filter((t) => (t.categoryId ?? OTHER_CATEGORY_ID) === overCategoryId)
               .sort((a, b) => a.order - b.order);
 
-            const index = groupTemplates.findIndex((t) => t.id === tid);
+            const index = categoryTemplates.findIndex((t) => t.id === tid);
 
             // before なら要素の前のギャップ、after なら要素の後のギャップ
             const gapIndex = position === 'after' ? index + 1 : index;
-            setActiveTemplateGapId(`gap-${overTemplate.groupId}-${gapIndex}`);
+            const newGapId = `gap_${overCategoryId}_${gapIndex}`;
+            setActiveTemplateGapId(newGapId);
           }
         }
         return;
@@ -145,7 +167,7 @@ export const useDragAndDrop = ({
   const handleDragEnd = async (event: DragEndEvent) => {
     const activeIdStr = String(event.active.id);
 
-    if (activeIdStr.startsWith('group-')) {
+    if (activeIdStr.startsWith('category-')) {
       await handleGroupDragEnd(event);
     } else if (activeIdStr.startsWith('template-')) {
       await handleTemplateDragEnd(event);
@@ -154,16 +176,16 @@ export const useDragAndDrop = ({
 
   const handleGroupDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    const activeId = parseInt(String(active.id).replace('group-', ''), 10);
+    const activeId = parseInt(String(active.id).replace('category-', ''), 10);
 
-    setActiveGroupId(null);
+    setActiveCategoryId(null);
     setActiveGroupGapId(null);
 
     // ドロップ先がない場合：元の展開状態を復元
     if (!over) {
       await new Promise((resolve) => setTimeout(resolve, 200));
       if (wasGroupExpandedBeforeDrag) {
-        setExpandedGroups((prev) => {
+        setExpandedCategories((prev) => {
           const next = new Set(prev);
           next.add(activeId);
           return next;
@@ -176,11 +198,11 @@ export const useDragAndDrop = ({
     const activeIdStr = String(active.id);
     const overIdStr = String(over.id);
 
-    // グループギャップ以外にドロップした場合：元の展開状態を復元
-    if (!activeIdStr.startsWith('group-') || !overIdStr.startsWith('group-gap-')) {
+    // カテゴリギャップ以外にドロップした場合：元の展開状態を復元
+    if (!activeIdStr.startsWith('category-') || !overIdStr.startsWith('category-gap-')) {
       await new Promise((resolve) => setTimeout(resolve, 200));
       if (wasGroupExpandedBeforeDrag) {
-        setExpandedGroups((prev) => {
+        setExpandedCategories((prev) => {
           const next = new Set(prev);
           next.add(activeId);
           return next;
@@ -190,13 +212,13 @@ export const useDragAndDrop = ({
       return;
     }
 
-    // targetIndexは「group-gap-N」のN（ギャップ番号）
-    const targetIndex = parseInt(overIdStr.replace('group-gap-', ''), 10);
+    // targetIndexは「category-gap-N」のN（ギャップ番号）
+    const targetIndex = parseInt(overIdStr.replace('category-gap-', ''), 10);
 
     if (isNaN(targetIndex)) {
       await new Promise((resolve) => setTimeout(resolve, 200));
       if (wasGroupExpandedBeforeDrag) {
-        setExpandedGroups((prev) => {
+        setExpandedCategories((prev) => {
           const next = new Set(prev);
           next.add(activeId);
           return next;
@@ -206,14 +228,14 @@ export const useDragAndDrop = ({
       return;
     }
 
-    const activeGroupId = parseInt(activeIdStr.replace('group-', ''), 10);
-    const oldIndex = groups.findIndex((g) => g.id === activeGroupId);
+    const activeCategoryId = parseInt(activeIdStr.replace('category-', ''), 10);
+    const oldIndex = categories.findIndex((c) => c.id === activeCategoryId);
 
     // 移動がない場合：元の展開状態を復元
     if (oldIndex < 0 || oldIndex === targetIndex) {
       await new Promise((resolve) => setTimeout(resolve, 200));
       if (wasGroupExpandedBeforeDrag) {
-        setExpandedGroups((prev) => {
+        setExpandedCategories((prev) => {
           const next = new Set(prev);
           next.add(activeId);
           return next;
@@ -223,20 +245,20 @@ export const useDragAndDrop = ({
       return;
     }
 
-    // グループはドラッグ中に元の位置が詰められるため、後方へ移動する場合は削除前インデックス基準の
+    // カテゴリはドラッグ中に元の位置が詰められるため、後方へ移動する場合は削除前インデックス基準の
     // arrayMove に合わせて targetIndex を 1 減らして補正する必要がある。
     const insertIndex = oldIndex < targetIndex ? targetIndex - 1 : targetIndex;
-    const newOrder = arrayMove(groups, oldIndex, insertIndex);
+    const newOrder = arrayMove(categories, oldIndex, insertIndex);
 
-    setGroups(newOrder.map((g, i) => ({ ...g, order: i })));
+    setCategories(newOrder.map((c, i) => ({ ...c, order: i })));
 
     await new Promise((resolve) => setTimeout(resolve, 200));
 
-    await reorderGroups(newOrder.map((g) => g.id));
+    await reorderCategories(newOrder.map((g) => g.id));
 
     // 元の展開状態を復元
     if (wasGroupExpandedBeforeDrag) {
-      setExpandedGroups((prev) => {
+      setExpandedCategories((prev) => {
         const next = new Set(prev);
         next.add(activeId);
         return next;
@@ -253,7 +275,7 @@ export const useDragAndDrop = ({
     const finalGapId = activeTemplateGapId;
     setActiveTemplateGapId(null);
 
-    if (!finalGapId || !finalGapId.startsWith('gap-')) return;
+    if (!finalGapId || !finalGapId.startsWith('gap_')) return;
 
     const activeIdStr = String(active.id);
     if (!activeIdStr.startsWith('template-')) return;
@@ -262,66 +284,72 @@ export const useDragAndDrop = ({
     const activeTemplate = templates.find((t) => t.id === activeTemplateId);
     if (!activeTemplate) return;
 
-    // groupId が null のテンプレートは移動不可
-    if (activeTemplate.groupId === null) return;
-
-    // finalGapIdは「gap-{groupId}-{index}」形式
-    const parts = finalGapId.split('-');
+    // finalGapIdは「gap_{categoryId}_{index}」形式
+    const parts = finalGapId.split('_');
     if (parts.length !== 3) return;
 
-    const targetGroupId = parseInt(parts[1], 10);
+    const targetCategoryIdStr = parts[1];
     const targetIndex = parseInt(parts[2], 10);
 
-    if (isNaN(targetGroupId) || isNaN(targetIndex)) return;
+    if (isNaN(targetIndex)) return;
 
-    const isCrossGroup = activeTemplate.groupId !== targetGroupId;
+    // targetCategoryId は OTHER_CATEGORY_ID の場合 null に変換
+    const targetCategoryId =
+      targetCategoryIdStr === String(OTHER_CATEGORY_ID) ? null : parseInt(targetCategoryIdStr, 10);
+    if (targetCategoryId !== null && isNaN(targetCategoryId)) return;
 
-    // 別グループへの移動
-    if (isCrossGroup) {
+    const activeCategoryId = activeTemplate.categoryId ?? OTHER_CATEGORY_ID;
+    const targetCategoryIdForComparison = targetCategoryId ?? OTHER_CATEGORY_ID;
+    const isCrossCategory = activeCategoryId !== targetCategoryIdForComparison;
+
+    // 別カテゴリへの移動
+    if (isCrossCategory) {
       setTemplates((prev) => {
         const moved = {
           ...activeTemplate,
-          groupId: targetGroupId,
+          categoryId: targetCategoryId,
           order: targetIndex,
         };
 
         const filtered = prev.filter((t) => t.id !== activeTemplateId);
-        const targetGroupTemplates = filtered
-          .filter((t) => t.groupId === targetGroupId)
+        const targetCategoryTemplates = filtered
+          .filter((t) => (t.categoryId ?? OTHER_CATEGORY_ID) === targetCategoryIdForComparison)
           .sort((a, b) => a.order - b.order);
 
-        targetGroupTemplates.splice(targetIndex, 0, moved);
+        targetCategoryTemplates.splice(targetIndex, 0, moved);
 
-        const updatedTarget = targetGroupTemplates.map((t, i) => ({
+        const updatedTarget = targetCategoryTemplates.map((t, i) => ({
           ...t,
           order: i,
         }));
 
-        const others = filtered.filter((t) => t.groupId !== targetGroupId);
+        const others = filtered.filter((t) => (t.categoryId ?? OTHER_CATEGORY_ID) !== targetCategoryIdForComparison);
         return [...others, ...updatedTarget];
       });
 
-      await moveTemplateToGroup(activeTemplateId, targetGroupId, targetIndex);
+      await moveTemplateToCategory(activeTemplateId, targetCategoryId, targetIndex);
     } else {
-      // 同じグループ内での並び替え
-      const groupTemplates = templates.filter((t) => t.groupId === targetGroupId).sort((a, b) => a.order - b.order);
+      // 同じカテゴリ内での並び替え
+      const categoryTemplates = templates
+        .filter((t) => (t.categoryId ?? OTHER_CATEGORY_ID) === targetCategoryIdForComparison)
+        .sort((a, b) => a.order - b.order);
 
-      const oldIndex = groupTemplates.findIndex((t) => t.id === activeTemplateId);
+      const oldIndex = categoryTemplates.findIndex((t) => t.id === activeTemplateId);
 
       // ドラッグ中は要素が元の位置に残るため、後方へ移動する場合は「ドラッグ中の配列基準」の targetIndex を 1 減らして補正し、
       // その値を newIndex として並び替える必要がある。
       const newIndex = oldIndex < targetIndex ? targetIndex - 1 : targetIndex;
 
       if (oldIndex !== newIndex) {
-        const newOrder = arrayMove(groupTemplates, oldIndex, newIndex);
+        const newOrder = arrayMove(categoryTemplates, oldIndex, newIndex);
 
         setTemplates((prev) => {
-          const others = prev.filter((t) => t.groupId !== targetGroupId);
+          const others = prev.filter((t) => (t.categoryId ?? OTHER_CATEGORY_ID) !== targetCategoryIdForComparison);
           return [...others, ...newOrder.map((t, i) => ({ ...t, order: i }))];
         });
 
         await reorderTemplates(
-          targetGroupId,
+          targetCategoryId,
           newOrder.map((t) => t.id),
         );
       }
@@ -331,22 +359,22 @@ export const useDragAndDrop = ({
   const handleDragCancel = () => {
     setActiveTemplateId(null);
     setActiveTemplateGapId(null);
-    setActiveGroupId(null);
+    setActiveCategoryId(null);
     setActiveGroupGapId(null);
   };
 
   const activeTemplate = activeTemplateId ? templates.find((t) => t.id === activeTemplateId) : null;
 
-  const activeGroup = activeGroupId ? groups.find((g) => g.id === activeGroupId) : null;
+  const activeCategory = activeCategoryId ? categories.find((c) => c.id === activeCategoryId) : null;
 
   return {
     sensors,
     activeTemplateId,
     activeTemplateGapId,
-    activeGroupId,
+    activeCategoryId,
     activeGroupGapId,
     activeTemplate,
-    activeGroup,
+    activeCategory,
     handleDragStart,
     handleDragOver,
     handleDragEnd,

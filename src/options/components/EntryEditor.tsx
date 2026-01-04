@@ -3,12 +3,12 @@ import { type Template } from '../../types/index.ts';
 
 interface TemplateModalProps {
   template: Template | null;
-  groupId: number | null;
-  onSave: (template: Partial<Template> & { groupId: number }) => void;
+  categoryId: number | null;
+  onSave: (template: Partial<Template> & { categoryId: number | null }) => void;
   onClose: () => void;
 }
 
-const TemplateModal: React.FC<TemplateModalProps> = ({ template, groupId, onSave, onClose }) => {
+const TemplateModal: React.FC<TemplateModalProps> = ({ template, categoryId, onSave, onClose }) => {
   const [name, setName] = useState(template?.name || '');
   const [content, setContent] = useState(template?.content || '');
   const [showError, setShowError] = useState(false);
@@ -22,7 +22,7 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ template, groupId, onSave
     }
     onSave({
       id: template?.id,
-      groupId: template?.groupId ?? groupId!,
+      categoryId: template?.categoryId ?? categoryId!,
       name: name.trim(),
       content: content,
     });

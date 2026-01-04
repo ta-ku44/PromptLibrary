@@ -1,41 +1,41 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Template } from '../../types';
 
-export const useUIState = (groupIds: number[]) => {
+export const useUIState = (categoryIds: number[]) => {
   const initializedRef = useRef(false);
-  const prevGroupIdsRef = useRef<number[]>([]);
+  const prevCategoryIdsRef = useRef<number[]>([]);
 
-  const [expandedGroups, setExpandedGroups] = useState<Set<number>>(() => new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(() => new Set());
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
-  const [addingToGroupId, setAddingToGroupId] = useState<number | null>(null);
+  const [addingToCategoryId, setAddingToCategoryId] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingGroupId, setEditingGroupId] = useState<number | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(null);
 
   useEffect(() => {
-    // 初回: すべてのグループを展開
-    if (!initializedRef.current && groupIds.length > 0) {
-      setExpandedGroups(new Set(groupIds));
-      prevGroupIdsRef.current = groupIds;
+    // 初回: すべてのカテゴリを展開
+    if (!initializedRef.current && categoryIds.length > 0) {
+      setExpandedCategories(new Set(categoryIds));
+      prevCategoryIdsRef.current = categoryIds;
       initializedRef.current = true;
       return;
     }
 
-    // 以降: 新規追加されたグループのみ展開
+    // 以降: 新規追加されたカテゴリのみ展開
     if (initializedRef.current) {
-      const prevIds = new Set(prevGroupIdsRef.current);
-      const newGroupIds = groupIds.filter((id) => !prevIds.has(id));
+      const prevIds = new Set(prevCategoryIdsRef.current);
+      const newCategoryIds = categoryIds.filter((id) => !prevIds.has(id));
 
-      if (newGroupIds.length > 0) {
-        setExpandedGroups((prev) => {
+      if (newCategoryIds.length > 0) {
+        setExpandedCategories((prev) => {
           const next = new Set(prev);
-          newGroupIds.forEach((id) => next.add(id));
+          newCategoryIds.forEach((id) => next.add(id));
           return next;
         });
       }
 
-      // 削除されたグループは展開状態から除外
-      const currentIds = new Set(groupIds);
-      setExpandedGroups((prev) => {
+      // 削除されたカテゴリは展開状態から除外
+      const currentIds = new Set(categoryIds);
+      setExpandedCategories((prev) => {
         const next = new Set(prev);
         let changed = false;
         prev.forEach((id) => {
@@ -47,56 +47,56 @@ export const useUIState = (groupIds: number[]) => {
         return changed ? next : prev;
       });
 
-      prevGroupIdsRef.current = groupIds;
+      prevCategoryIdsRef.current = categoryIds;
     }
-  }, [groupIds]);
+  }, [categoryIds]);
 
-  const toggleGroup = (groupId: number) => {
-    setExpandedGroups((prev) => {
+  const toggleCategory = (categoryId: number) => {
+    setExpandedCategories((prev) => {
       const next = new Set(prev);
-      next.has(groupId) ? next.delete(groupId) : next.add(groupId);
+      next.has(categoryId) ? next.delete(categoryId) : next.add(categoryId);
       return next;
     });
   };
 
-  const openAddTemplateModal = (groupId: number) => {
-    setAddingToGroupId(groupId);
+  const openAddTemplateModal = (categoryId: number) => {
+    setAddingToCategoryId(categoryId);
     setEditingTemplate(null);
     setIsModalOpen(true);
   };
 
   const openEditTemplateModal = (template: Template) => {
     setEditingTemplate(template);
-    setAddingToGroupId(null);
+    setAddingToCategoryId(null);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingTemplate(null);
-    setAddingToGroupId(null);
+    setAddingToCategoryId(null);
   };
 
-  const startEditingGroup = (groupId: number) => {
-    setEditingGroupId(groupId);
+  const startEditingCategory = (categoryId: number) => {
+    setEditingCategoryId(categoryId);
   };
 
-  const finishEditingGroup = () => {
-    setEditingGroupId(null);
+  const finishEditingCategory = () => {
+    setEditingCategoryId(null);
   };
 
   return {
-    expandedGroups,
-    setExpandedGroups,
+    expandedCategories,
+    setExpandedCategories,
     editingTemplate,
-    addingToGroupId,
+    addingToCategoryId,
     isModalOpen,
-    editingGroupId,
-    toggleGroup,
+    editingCategoryId,
+    toggleCategory,
     openAddTemplateModal,
     openEditTemplateModal,
     closeModal,
-    startEditingGroup,
-    finishEditingGroup,
+    startEditingCategory,
+    finishEditingCategory,
   };
 };

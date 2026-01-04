@@ -2,9 +2,9 @@ import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 
 interface DropGapProps {
-  type: 'template' | 'group';
+  type: 'template' | 'category-gap';
   indexOrId: number;
-  groupId?: number;
+  categoryId?: number;
   isDraggingGroup?: boolean;
   isActive: boolean;
   disabled?: boolean;
@@ -13,20 +13,20 @@ interface DropGapProps {
 const DropGap: React.FC<DropGapProps> = ({
   type,
   indexOrId,
-  groupId,
+  categoryId,
   isDraggingGroup = false,
   isActive,
   disabled = false,
 }) => {
-  const id = type === 'template' ? `gap-${groupId}-${indexOrId}` : `group-gap-${indexOrId}`;
+  const id = type === 'template' ? `gap_${categoryId}_${indexOrId}` : `category-gap-${indexOrId}`;
 
-  const isDisabled = (type === 'group' && !isDraggingGroup) || disabled;
+  const isDisabled = (type === 'category-gap' && !isDraggingGroup) || disabled;
 
   const { setNodeRef } = useDroppable({
     id,
     data: {
       type: `${type}-gap`,
-      groupId: type === 'template' ? groupId : undefined,
+      categoryId: type === 'template' ? categoryId : undefined,
       indexOrId,
     },
     disabled: isDisabled,

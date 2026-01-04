@@ -1,4 +1,4 @@
-# Invoke Prompts from Templates
+# Prompt Library
 
 ユーザーがよく使うプロンプトをテンプレートとして保存・管理し、素早く呼び出して使用できる拡張機能。
 

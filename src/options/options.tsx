@@ -4,77 +4,77 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import Icons from './assets/icons.ts';
 import type { Template } from '../types/index';
 import TemplateModal from './components/EntryEditor.tsx';
-import GroupItem from './components/GroupPanel.tsx';
+import CategoryItem from './components/CategoryPanel.tsx';
 import DragHandle from './components/DragHandle.tsx';
 import DropGap from './components/DropGap.tsx';
-import { useGroupsAndTemplates } from './hooks/useGroupsAndTemplates';
+import { useGroupsAndTemplates } from './hooks/useCategoryAndTemplates.ts';
 import { useUIState } from './hooks/useUIState';
 import { useDragAndDrop } from './hooks/useDragAndDrop';
 import './styles.scss';
 
 const Options: React.FC = () => {
   const {
-    groups,
+    categories,
     templates,
-    setGroups,
+    setCategories,
     setTemplates,
-    addGroup,
-    deleteGroup,
-    updateGroupName,
-    reorderGroups,
+    addCategory,
+    deleteCategory,
+    updateCategoryName,
+    reorderCategories,
     addTemplate,
     updateTemplate,
     deleteTemplate,
-    moveTemplateToGroup,
+    moveTemplateToCategory,
     reorderTemplates,
-    getTemplatesForGroup,
+    getTemplatesForCategory,
   } = useGroupsAndTemplates();
 
   const {
-    expandedGroups,
-    setExpandedGroups,
+    expandedCategories,
+    setExpandedCategories,
     editingTemplate,
-    addingToGroupId,
+    addingToCategoryId,
     isModalOpen,
-    editingGroupId,
-    toggleGroup,
+    editingCategoryId,
+    toggleCategory,
     openAddTemplateModal,
     openEditTemplateModal,
     closeModal,
-    startEditingGroup,
-    finishEditingGroup,
-  } = useUIState(groups.map((g) => g.id));
+    startEditingCategory,
+    finishEditingCategory,
+  } = useUIState(categories.map((c) => c.id));
 
   const {
     sensors,
     activeTemplateId,
     activeTemplateGapId,
-    activeGroupId,
+    activeCategoryId,
     activeGroupGapId,
     activeTemplate,
-    activeGroup,
+    activeCategory,
     handleDragStart,
     handleDragOver,
     handleDragEnd,
     handleDragCancel,
   } = useDragAndDrop({
-    groups,
+    categories,
     templates,
-    expandedGroups,
-    setExpandedGroups,
-    setGroups,
+    expandedCategories,
+    setExpandedCategories,
+    setCategories,
     setTemplates,
-    reorderGroups,
-    moveTemplateToGroup,
+    reorderCategories,
+    moveTemplateToCategory,
     reorderTemplates,
   });
 
-  const handleAddGroup = async () => {
-    const newGroupId = await addGroup();
-    startEditingGroup(newGroupId);
+  const handleAddCategory = async () => {
+    const newCategoryId = await addCategory();
+    startEditingCategory(newCategoryId);
   };
 
-  const handleSaveTemplate = async (templateData: Partial<Template> & { groupId: number }) => {
+  const handleSaveTemplate = async (templateData: Partial<Template> & { categoryId: number | null }) => {
     if (templateData.id) {
       await updateTemplate(templateData.id, {
         name: templateData.name,
@@ -82,7 +82,7 @@ const Options: React.FC = () => {
       });
     } else {
       await addTemplate({
-        groupId: templateData.groupId,
+        categoryId: templateData.categoryId,
         name: templateData.name || '',
         content: templateData.content || '',
       });
@@ -102,59 +102,68 @@ const Options: React.FC = () => {
     >
       <div className="options-container">
         <header className="options-header">
-          <h1>Invoke Prompts from Templates</h1>
+          <h1>Prompt Library</h1>
         </header>
 
-        <div className="group-area">
-          <div className="group-area__header">
-            <button className="button button--add-group" onClick={handleAddGroup}>
+        <div className="category-area">
+          <div className="category-area__header">
+            <button className="button button--add-category" onClick={handleAddCategory}>
               <Icons.PlaylistAdd />
-              グループを追加
+              カテゴリを追加
             </button>
           </div>
-          {groups.length === 0 ? (
+          {categories.length === 0 ? (
             <div className="empty-state">
-              <p>まだグループがありません</p>
+              <p>まだカテゴリがありません</p>
               <p>「追加」ボタンをクリックして開始しましょう</p>
             </div>
           ) : (
-            <div className="group-area__list">
-              {groups.map((group, idx) => (
-                <React.Fragment key={group.id}>
-                  <DropGap
-                    type="group"
-                    indexOrId={idx}
-                    isActive={activeGroupGapId === `group-gap-${idx}`}
-                    isDraggingGroup={activeGroupId !== null}
-                  />
+            <div className="category-area__list">
+              {categories.map((category, idx) => {
+                // Other カテゴリ（id: -1）の場合は特別に処理
+                const isOtherCategory = category.id === -1;
 
-                  <GroupItem
-                    group={group}
-                    templates={getTemplatesForGroup(group.id)}
-                    isExpanded={expandedGroups.has(group.id)}
-                    onToggle={() => toggleGroup(group.id)}
-                    onEdit={openEditTemplateModal}
-                    onDeleteTemplate={deleteTemplate}
-                    onTemplateNameChange={(id, name) => updateTemplate(id, { name })}
-                    onGroupNameChange={updateGroupName}
-                    onDeleteGroup={deleteGroup}
-                    onAddTemplate={openAddTemplateModal}
-                    startEditing={editingGroupId === group.id}
-                    onEditingComplete={finishEditingGroup}
-                    activeTemplateId={activeTemplateId}
-                    activeGapId={activeTemplateGapId}
-                    groupDraggableId={`group-${group.id}`}
-                    isGroupDragging={activeGroupId === group.id}
-                    isAnyGroupDragging={activeGroupId !== null}
-                  />
-                </React.Fragment>
-              ))}
-              <DropGap
-                type="group"
-                indexOrId={groups.length}
-                isActive={activeGroupGapId === `group-gap-${groups.length}`}
-                isDraggingGroup={activeGroupId !== null}
-              />
+                return (
+                  <React.Fragment key={category.id}>
+                    {/* 全ての前にギャップを表示 */}
+                    <DropGap
+                      type="category-gap"
+                      indexOrId={idx}
+                      isActive={activeGroupGapId === `category-gap-${idx}`}
+                      isDraggingGroup={activeCategoryId !== null}
+                    />
+
+                    <CategoryItem
+                      category={category}
+                      templates={getTemplatesForCategory(category.id)}
+                      isExpanded={expandedCategories.has(category.id)}
+                      onToggle={() => toggleCategory(category.id)}
+                      onEdit={openEditTemplateModal}
+                      onDeleteTemplate={deleteTemplate}
+                      onTemplateNameChange={(id, name) => updateTemplate(id, { name })}
+                      onCategoryNameChange={updateCategoryName}
+                      onDeleteCategory={deleteCategory}
+                      onAddTemplate={openAddTemplateModal}
+                      startEditing={editingCategoryId === category.id}
+                      onEditingComplete={finishEditingCategory}
+                      activeTemplateId={activeTemplateId}
+                      activeGapId={activeTemplateGapId}
+                      categoryDraggableId={`category-${category.id}`}
+                      isCategoryDragging={activeCategoryId === category.id}
+                      isAnyCategoryDragging={activeCategoryId !== null && !isOtherCategory}
+                    />
+                  </React.Fragment>
+                );
+              })}
+              {/* Other カテゴリの後のギャップは表示しない */}
+              {!categories.some((c) => c.id === -1) && (
+                <DropGap
+                  type="category-gap"
+                  indexOrId={categories.length}
+                  isActive={activeGroupGapId === `category-gap-${categories.length}`}
+                  isDraggingGroup={activeCategoryId !== null}
+                />
+              )}
             </div>
           )}
         </div>
@@ -162,7 +171,7 @@ const Options: React.FC = () => {
         {isModalOpen && (
           <TemplateModal
             template={editingTemplate}
-            groupId={addingToGroupId}
+            categoryId={addingToCategoryId}
             onSave={handleSaveTemplate}
             onClose={closeModal}
           />
@@ -184,13 +193,13 @@ const Options: React.FC = () => {
             </div>
           )}
 
-          {activeGroup && (
-            <div className="group group--drag-overlay">
-              <div className="group__header">
+          {activeCategory && (
+            <div className="category category--drag-overlay">
+              <div className="category__header">
                 <button className="button button--expand">
                   <Icons.ExpandMore />
                 </button>
-                <span className="group__name">{activeGroup.name}</span>
+                <span className="category__name">{activeCategory.name}</span>
               </div>
             </div>
           )}
