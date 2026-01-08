@@ -19,10 +19,11 @@
         "https://grok.com/*",
         "https://*.x.ai/*",
         "https://x.com/i/grok*",
-        "https://*.deepseek.com/*",
         "https://*.github.com/*",
         "https://*.cloud.microsoft/*",
-        "https://copilot.microsoft.com/*"
+        "https://copilot.microsoft.com/*",
+        "https://*.deepseek.com/*",
+        "https://www.genspark.ai/*"
       ],
       "js": ["src/content/index.js"]
     }
