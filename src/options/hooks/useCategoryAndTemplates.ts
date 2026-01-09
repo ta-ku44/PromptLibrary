@@ -2,13 +2,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Template, Category } from '../../types/index';
 import * as s from '../../utils/storage';
 
-// 特別なOtherカテゴリ（categoryId: null のテンプレート用）
-const OTHER_CATEGORY: Category = {
-  id: -1, // 特別なID
-  name: 'Other',
-  order: Number.MAX_SAFE_INTEGER, // 常に最後
-};
-
 export const useGroupsAndTemplates = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -17,9 +10,9 @@ export const useGroupsAndTemplates = () => {
   const loadData = useCallback(async () => {
     try {
       const data = await s.loadStoredData();
-      // 通常のカテゴリ + Otherカテゴリ
+      // 通常のカテゴリのみ
       const normalCategories = [...data.categories].sort((a, b) => a.order - b.order);
-      setCategories([...normalCategories, OTHER_CATEGORY]);
+      setCategories([...normalCategories]);
       setTemplates(data.templates);
     } catch (error) {
       handleStorageError(error, 'データの読み込み');
@@ -30,7 +23,7 @@ export const useGroupsAndTemplates = () => {
     loadData();
   }, [loadData]);
 
-  // エラーハンドリング（storage側で既にログ出力済み）
+  // エラーハンドリング
   const handleStorageError = (error: unknown, operation: string) => {
     if (error instanceof Error && error.name === 'StorageError') {
       const cause = (error as any).cause;
@@ -48,14 +41,11 @@ export const useGroupsAndTemplates = () => {
     const newCategory: Category = {
       id: tempId,
       name: '新しいカテゴリ',
-      order: categories.length - 1, // Otherカテゴリの前
+      order: categories.length,
     };
 
-    // 楽観的更新（Otherカテゴリは常に最後に保持）
-    setCategories((prev) => {
-      const withoutOther = prev.filter((c) => c.id !== OTHER_CATEGORY.id);
-      return [...withoutOther, newCategory, OTHER_CATEGORY];
-    });
+    // 楽観的更新
+    setCategories((prev) => [...prev, newCategory]);
 
     try {
       const actualId = await s.addCategory({ name: '新しいカテゴリ' });
@@ -71,11 +61,6 @@ export const useGroupsAndTemplates = () => {
   };
 
   const deleteCategory = async (id: number) => {
-    // Otherカテゴリは削除不可
-    if (id === OTHER_CATEGORY.id) {
-      return;
-    }
-
     if (!confirm('このカテゴリとすべてのテンプレートを削除しますか？')) {
       return;
     }
@@ -97,11 +82,6 @@ export const useGroupsAndTemplates = () => {
   };
 
   const updateCategoryName = async (id: number, name: string) => {
-    // Otherカテゴリの名前は変更不可
-    if (id === OTHER_CATEGORY.id) {
-      return;
-    }
-
     // 楽観的更新
     const prevCategories = categories;
     setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, name } : c)));
@@ -115,19 +95,16 @@ export const useGroupsAndTemplates = () => {
   };
 
   const reorderCategories = async (categoryIds: number[]) => {
-    // Otherカテゴリは並び替え対象外（常に最後）
-    const normalCategoryIds = categoryIds.filter((id) => id !== OTHER_CATEGORY.id);
-
     // 楽観的更新
     const prevCategories = categories;
-    const reordered = normalCategoryIds.map((id, index) => {
+    const reordered = categoryIds.map((id, index) => {
       const category = categories.find((c) => c.id === id)!;
       return { ...category, order: index };
     });
-    setCategories([...reordered, OTHER_CATEGORY]);
+    setCategories([...reordered]);
 
     try {
-      await s.reorderCategories(normalCategoryIds);
+      await s.reorderCategories(categoryIds);
     } catch (error) {
       setCategories(prevCategories);
       handleStorageError(error, 'カテゴリの並び替え');
@@ -144,7 +121,6 @@ export const useGroupsAndTemplates = () => {
       order: categoryTemplates.length,
     };
 
-    // 楽観的更新
     setTemplates((prev) => [...prev, newTemplate]);
 
     try {
@@ -210,11 +186,13 @@ export const useGroupsAndTemplates = () => {
     }
   };
 
-  // カテゴリ別テンプレート取得（categoryId: null のテンプレートは OTHER_CATEGORY.id で管理）
+  // カテゴリ別テンプレート取得
   const templatesByCategory = useMemo(() => {
     const map = new Map<number, Template[]>();
     templates.forEach((t) => {
-      const key = t.categoryId ?? OTHER_CATEGORY.id;
+      if (t.categoryId == null) return; // Otherカテゴリを無効化
+
+      const key = t.categoryId;
       if (!map.has(key)) {
         map.set(key, []);
       }
@@ -229,7 +207,7 @@ export const useGroupsAndTemplates = () => {
 
   const getTemplatesForCategory = useCallback(
     (categoryId: number) => templatesByCategory.get(categoryId) || [],
-    [templatesByCategory],
+    [templatesByCategory]
   );
 
   return {

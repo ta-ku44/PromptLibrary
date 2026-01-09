@@ -5,7 +5,7 @@ import browser from 'webextension-polyfill';
 
 let inputProcessor: InputProcessor | null = null;
 let key = '#';
-let curInputEl: HTMLElement | null = null;
+let curInputBox: HTMLElement | null = null;
 
 const init = async () => {
   await loadKey();
@@ -24,24 +24,24 @@ const init = async () => {
 };
 
 const setup = (el: HTMLElement) => {
-  if (curInputEl === el) return;
+  if (curInputBox === el) return;
   cleanup();
-  curInputEl = el;
-  inputProcessor = new InputProcessor(curInputEl, key, (query) => {
+  curInputBox = el;
+  inputProcessor = new InputProcessor(curInputBox, key, (query) => {
     if (query !== null) {
-      showSuggest(curInputEl!, query, (template) => inputProcessor?.insertPrompt(template.content));
+      showSuggest(curInputBox!, query, (template) => inputProcessor?.insertPrompt(template.content));
     } else {
       hideSuggest();
     }
   });
-  curInputEl.addEventListener('input', inputProcessor.getInputStatus);
+  curInputBox.addEventListener('input', inputProcessor.getInputStatus);
 };
 
 const cleanup = () => {
-  if (curInputEl && inputProcessor) curInputEl.removeEventListener('input', inputProcessor.getInputStatus);
+  if (curInputBox && inputProcessor) curInputBox.removeEventListener('input', inputProcessor.getInputStatus);
   hideSuggest();
   inputProcessor = null;
-  curInputEl = null;
+  curInputBox = null;
 };
 
 const loadKey = async () => {

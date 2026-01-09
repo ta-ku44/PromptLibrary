@@ -10,7 +10,6 @@ export class InputProcessor {
     this.onQueryChange = onQueryChange;
   }
 
-  //* トリガーキーを更新
   public updateKey(newKey: string): void {
     if (this.key !== newKey) {
       this.key = newKey;
@@ -18,7 +17,6 @@ export class InputProcessor {
     }
   }
 
-  //* 入力状況を出力
   public getInputStatus = () => {
     const text = this.inputBox instanceof HTMLTextAreaElement ? this.inputBox.value : this.inputBox.innerText;
     const match = text.match(this.getRegex());
@@ -32,7 +30,7 @@ export class InputProcessor {
       console.error('handleInputでエラーを検出:', error);
     }
   };
-  
+
   //* 正規表現を取得
   private getRegex(): RegExp {
     if (this.cachedRegex) return this.cachedRegex;
@@ -41,13 +39,14 @@ export class InputProcessor {
     return this.cachedRegex;
   }
 
-  //* テンプレートを挿入
   public insertPrompt(prompt: string): void {
     const inputBox = this.inputBox;
 
     if (inputBox instanceof HTMLTextAreaElement) {
+      // textarea への挿入
       this.insertIntoTextArea(inputBox, prompt);
     } else if (inputBox instanceof HTMLDivElement) {
+      // contenteditable への挿入
       this.insertIntoDiv(inputBox, prompt);
     } else {
       console.error('Unsupported element type:', inputBox.tagName);
@@ -57,7 +56,6 @@ export class InputProcessor {
     inputBox.focus();
   }
 
-  //* TextAreaへの挿入処理
   private insertIntoTextArea(el: HTMLTextAreaElement, prompt: string): void {
     const currentText = el.value;
     const newText = currentText.replace(this.getRegex(), (match) => {
@@ -69,7 +67,6 @@ export class InputProcessor {
     el.dispatchEvent(new Event('input', { bubbles: true }));
   }
 
-  //* ContentEditableへの挿入処理
   private insertIntoDiv(inputBox: HTMLDivElement, prompt: string): void {
     const editorType = detectEditorType(inputBox);
 
@@ -158,7 +155,7 @@ export class InputProcessor {
     }
   }
 
-  //* 汎用的な挿入処理（unknown エディタ用）
+  //* 汎用的な挿入処理
   private handleGenericInsert(inputBox: HTMLDivElement, prompt: string): void {
     const textToInsert = prompt + '  ';
 

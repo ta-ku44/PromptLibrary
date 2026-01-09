@@ -10,11 +10,10 @@ let rootEl: HTMLElement | null = null;
 let cachedData: StorageData | null = null;
 let cachePromise: Promise<StorageData> | null = null;
 
-//* サジェストを表示
 export const showSuggest = async (
   curInputEl: HTMLElement,
   query: string,
-  onInsert: (template: Template) => void,
+  onInsert: (template: Template) => void
 ): Promise<void> => {
   if (!curInputEl) return;
 
@@ -42,11 +41,10 @@ export const showSuggest = async (
       inputEl={curInputEl}
       onSelect={onInsert}
       onClose={hideSuggest}
-    />,
+    />
   );
 };
 
-//* サジェストを非表示
 export const hideSuggest = () => {
   root?.unmount();
   root = null;
@@ -54,8 +52,7 @@ export const hideSuggest = () => {
   rootEl = null;
 };
 
-//* サジェストの位置を入力欄に合わせて調整
-const adjustPosition = (el: HTMLElement) => {
+const adjustDrawingLocation = (el: HTMLElement) => {
   if (!rootEl) return;
   const rect = el.getBoundingClientRect();
   let left = rect.left;
@@ -157,11 +154,15 @@ const Suggest: React.FC<SuggestProps> = ({ templates, categories, inputEl, onSel
 
   // カテゴリ名を取得
   const getCategoryName = (id: number | null) =>
-    id === null ? 'other' : (categories.find((c) => c.id === id)?.name ?? 'other');
+    id === null ? 'other' : categories.find((c) => c.id === id)?.name ?? 'other';
 
   const flatTemplates = useMemo(() => {
     return Array.from(categorizedData.values()).flatMap((list) => list.slice().sort((a, b) => a.order - b.order));
   }, [categorizedData]);
+
+  const lastTemplateId = useMemo(() => {
+    return flatTemplates[flatTemplates.length - 1]?.id ?? null;
+  }, [flatTemplates]);
 
   useEffect(() => {
     if (flatTemplates.length) {
@@ -172,7 +173,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, categories, inputEl, onSel
 
   // 位置を設定
   useLayoutEffect(() => {
-    adjustPosition(inputEl);
+    adjustDrawingLocation(inputEl);
     if (rootEl) {
       rootEl.style.visibility = 'visible';
     }
@@ -180,7 +181,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, categories, inputEl, onSel
 
   // リサイズ・スクロール時に位置を更新
   useEffect(() => {
-    const update = () => adjustPosition(inputEl);
+    const update = () => adjustDrawingLocation(inputEl);
     const ro = new ResizeObserver(update);
     ro.observe(inputEl);
     window.addEventListener('resize', update);
@@ -299,7 +300,9 @@ const Suggest: React.FC<SuggestProps> = ({ templates, categories, inputEl, onSel
                     if (el) itemRefs.current.set(item.id, el);
                     else itemRefs.current.delete(item.id);
                   }}
-                  className={`suggest__templateItem ${item.id === keyboardSelectedId ? 'is-keyboard-selected' : ''} ${!isKeyboardMode && item.id === hoveredId ? 'is-hovered' : ''}`}
+                  className={`suggest__templateItem ${item.id === keyboardSelectedId ? 'is-keyboard-selected' : ''} ${
+                    !isKeyboardMode && item.id === hoveredId ? 'is-hovered' : ''
+                  } ${item.id === lastTemplateId ? 'is-last' : ''}`}
                   onMouseEnter={() => {
                     if (!isKeyboardMode) setHoveredId(item.id);
                   }}

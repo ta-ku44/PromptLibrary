@@ -96,7 +96,7 @@
       background-color: var(--suggest-item-keyboard-bg);
     }
 
-    &:last-child {
+    &.is-last {
       border-bottom: none;
     }
   }

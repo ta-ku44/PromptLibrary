@@ -1,5 +1,5 @@
 export class DomObserver {
-  private curInputEl: HTMLElement | null = null;
+  private curInputBox: HTMLElement | null = null;
   private observer: MutationObserver | null = null;
   private onFound: (el: HTMLElement) => void;
   private onLost?: () => void;
@@ -14,13 +14,13 @@ export class DomObserver {
 
     this.observer = new MutationObserver(() => {
       // 既に入力欄を取得していてかつ、まだDOMに存在している場合
-      if (this.curInputEl && document.body.contains(this.curInputEl) && this.isValidInput(this.curInputEl)) return;
+      if (this.curInputBox && document.body.contains(this.curInputBox) && this.isValidInput(this.curInputBox)) return;
       // 既に取得していた入力欄がDOMから削除されていた場合
-      if (this.curInputEl && !document.body.contains(this.curInputEl)) {
-        this.curInputEl = null;
+      if (this.curInputBox && !document.body.contains(this.curInputBox)) {
+        this.curInputBox = null;
         this.onLost?.();
       }
-      this.assignInputElement();
+      this.assignInputBox();
     });
     
     this.observer.observe(document.body, { childList: true, subtree: true });
@@ -31,22 +31,22 @@ export class DomObserver {
       this.observer.disconnect();
       this.observer = null;
     }
-    this.curInputEl = null;
+    this.curInputBox = null;
   };
 
-  private assignInputElement = async (): Promise<void> => {
-    const foundInputEl = this.findInputElement();
+  private assignInputBox = async (): Promise<void> => {
+    const foundInputBox = this.findInputBox();
 
-    if (foundInputEl && foundInputEl !== this.curInputEl) {
-      this.curInputEl = foundInputEl;
-      this.onFound(foundInputEl);
-    } else if (!foundInputEl) {
+    if (foundInputBox && foundInputBox !== this.curInputBox) {
+      this.curInputBox = foundInputBox;
+      this.onFound(foundInputBox);
+    } else if (!foundInputBox) {
       console.log('有効な入力欄が見つかりませんでした');
     }
   };
 
   //* テキストエリアまたはコンテンツエディタブル要素を探索
-  private findInputElement = (): HTMLElement | null => {
+  private findInputBox = (): HTMLElement | null => {
     const selectors =[
       '[contenteditable="true"]',
       'textarea:not([disabled]):not([readonly])'
