@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Prompt Library",
+  "name": "PromptLibrary",
   "version": "1.0.0",
   "icons": {
     "128": "icons/PromptLibrary-icon128.png"
   },
-  "description": "",
+  "description": "Prompt management tool — save, organize, and quickly insert your frequently used prompts.",
   "permissions": ["storage"],
   "background": {
     "service_worker": "src/background/index.js",

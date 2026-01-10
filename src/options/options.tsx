@@ -102,9 +102,8 @@ const Options: React.FC = () => {
     >
       <div className="options-container">
         <header className="options-header">
-          <h1>Prompt Library</h1>
+          <h1>PromptLibrary</h1>
         </header>
-
         <div className="category-area">
           <div className="category-area__header">
             <button className="button button--add-category" onClick={handleAddCategory}>
