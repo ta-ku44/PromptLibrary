@@ -1,10 +1,10 @@
 export class DomObserver {
   private curInputBox: HTMLElement | null = null;
   private observer: MutationObserver | null = null;
-  private onFound: (el: HTMLElement) => void;
+  private onFound: (inputBox: HTMLElement) => void;
   private onLost?: () => void;
 
-  constructor(opts: { onFound: (el: HTMLElement) => void; onLost?: () => void }) {
+  constructor(opts: { onFound: (inputBox: HTMLElement) => void; onLost?: () => void }) {
     this.onFound = opts.onFound;
     this.onLost = opts.onLost;
   }
