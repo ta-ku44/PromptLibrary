@@ -13,13 +13,14 @@ let cachePromise: Promise<StorageData> | null = null;
 export async function showSuggest(
   curInputEl: HTMLElement,
   query: string,
-  onInsert: (template: Template) => void
+  onInsert: (template: Template) => void,
 ): Promise<void> {
   if (!curInputEl) return;
 
   const data = await getCachedData();
   const templates = data.templates.filter((t) => t.name.toLowerCase().includes(query.toLowerCase()));
   if (!templates.length) {
+    console.log('該当するテンプレートがありません');
     hideSuggest();
     return;
   }
@@ -27,8 +28,7 @@ export async function showSuggest(
   if (!rootEl) {
     rootEl = Object.assign(document.createElement('div'), {
       id: 'pl-suggest-root',
-      style:
-          `position:absolute;
+      style: `position:absolute;
           z-index:${Number.MAX_SAFE_INTEGER};
           visibility:hidden;`,
     });
@@ -44,7 +44,7 @@ export async function showSuggest(
       inputEl={curInputEl}
       onSelect={onInsert}
       onClose={hideSuggest}
-    />
+    />,
   );
 }
 
@@ -157,7 +157,7 @@ const Suggest: React.FC<SuggestProps> = ({ templates, categories, inputEl, onSel
 
   // カテゴリ名を取得
   const getCategoryName = (id: number | null) =>
-    id === null ? 'other' : categories.find((c) => c.id === id)?.name ?? 'other';
+    id === null ? 'other' : (categories.find((c) => c.id === id)?.name ?? 'other');
 
   const flatTemplates = useMemo(() => {
     return Array.from(categorizedData.values()).flatMap((list) => list.slice().sort((a, b) => a.order - b.order));
