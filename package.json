@@ -22,6 +22,7 @@
     "@mui/lab": "^7.0.1-beta.20",
     "@mui/material": "^7.3.6",
     "lexical": "^0.39.0",
+    "preact": "^10.28.3",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-flip-move": "^3.0.5",
