@@ -1,19 +1,20 @@
-export interface Template {
-  id: number;
-  categoryId: number | null;
+export type Item = {
+  id: string;
   name: string;
   content: string;
   order: number;
-}
+};
 
-export interface Category {
-  id: number;
+export type Category = {
+  id: string;
   name: string;
   order: number;
-}
+  itemIds: string[];
+};
 
-export interface StorageData {
-  templates: Template[];
-  categories: Category[];
-  shortcutKey: string;
-}
+export type StorageData = {
+  version: number;
+  items: Record<string, Item>;
+  categories: Record<string, Category>;
+  triggerKey: string;
+};

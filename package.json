@@ -10,46 +10,24 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/modifiers": "^9.0.0",
-    "@dnd-kit/sortable": "^10.0.0",
-    "@dnd-kit/utilities": "^3.2.2",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@lexical/html": "^0.39.0",
-    "@lexical/react": "^0.39.0",
-    "@mui/icons-material": "^7.3.6",
-    "@mui/lab": "^7.0.1-beta.20",
-    "@mui/material": "^7.3.6",
-    "lexical": "^0.39.0",
-    "preact": "^10.28.3",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "react-flip-move": "^3.0.5",
-    "textarea-caret": "^3.1.0"
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "uuid": "^13.0.0",
+    "webextension-polyfill": "^0.12.0"
   },
   "devDependencies": {
-    "@crxjs/vite-plugin": "^2.2.1",
     "@eslint/js": "^9.39.1",
-    "@tailwindcss/vite": "^4.1.18",
-    "@types/chrome": "^0.1.31",
-    "@types/node": "^24.10.4",
+    "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
-    "@types/textarea-caret": "^3.0.4",
     "@types/webextension-polyfill": "^0.12.4",
     "@vitejs/plugin-react": "^5.1.1",
-    "autoprefixer": "^10.4.23",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
-    "postcss": "^8.5.6",
-    "sass-embedded": "^1.97.0",
-    "tailwindcss": "^4.1.18",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4",
-    "webextension-polyfill": "^0.12.0"
+    "vite": "^7.2.4"
   }
 }
