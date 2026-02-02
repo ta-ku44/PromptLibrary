@@ -22,7 +22,7 @@ export async function setStorageDataAll(data: StorageData) {
 }
 
 export async function readStorageDataByType<K extends keyof StorageData>(Key: K): Promise<StorageData[K]> {
-  if (Key !== ITEM_KEY || Key !== CATEGORY_KEY || Key !== TRIGGER_KEY) throw new Error(`Invalid storage key: ${Key}`);
+  if (Key !== ITEM_KEY && Key !== CATEGORY_KEY && Key !== TRIGGER_KEY) throw new Error(`Unsupported key Type: ${Key}`);
 
   const result = await storage.get([Key]);
   const data = result[Key] as StorageData[K] | undefined;
@@ -31,7 +31,7 @@ export async function readStorageDataByType<K extends keyof StorageData>(Key: K)
 }
 
 export async function setStorageDataByType<K extends keyof StorageData>(key: K, value: StorageData[K]) {
-  if (key !== ITEM_KEY || key !== CATEGORY_KEY || key !== TRIGGER_KEY) throw new Error(`Invalid storage key: ${key}`);
+  if (key !== ITEM_KEY && key !== CATEGORY_KEY && key !== TRIGGER_KEY) throw new Error(`Unsupported key Type: ${key}`);
 
   await storage.set({ [key]: value });
 }
