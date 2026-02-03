@@ -1,4 +1,4 @@
-import { type StorageData } from '../types/index.ts';
+import { type StorageData } from '../../types/index.ts';
 
 export const DEFAULT_DATA: StorageData = {
   version: 1,
