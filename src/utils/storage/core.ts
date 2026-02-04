@@ -1,7 +1,7 @@
 import Browser from 'webextension-polyfill';
 import { v4 as uuidv4 } from 'uuid';
 import type { Item, Category, StorageData } from '../../types/index.ts';
-import { DEFAULT_DATA } from '../storage/default.ts';
+import { DEFAULT_DATA } from './default.ts';
 
 const ITEM_KEY = 'items';
 const CATEGORY_KEY = 'categories';
