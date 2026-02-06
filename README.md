@@ -1,73 +1,33 @@
-# Prompt Library
+This is a [Plasmo extension](https://docs.plasmo.com/) project bootstrapped with [`plasmo init`](https://www.npmjs.com/package/plasmo).
 
-**Prompt Library** は、ChatGPT、Claude、Gemini、Grok などの生成AIで**よく使うプロンプトを効率的に再利用できるChrome拡張機能**です。  
-入力欄にコマンドトリガー（デフォルト：`#`）を入力すると、プロンプト一覧がサジェスト表示され、選択したプロンプトが即座に挿入されます。
+## Getting Started
 
-## 主な機能
+First, run the development server:
 
-- **テンプレート管理**: よく使うプロンプトを保存し、カテゴリで整理
-- **プロンプトの挿入**: コマンドトリガーでプロンプトを即座に挿入
-- **入力変数**: `{{変数名}}` 形式で動的な入力欄を作成可能
+```bash
+pnpm dev
+# or
+npm run dev
+```
 
-## インストール
+Open your browser and load the appropriate development build. For example, if you are developing for the chrome browser, using manifest v3, use: `build/chrome-mv3-dev`.
 
-### Chrome ウェブストア経由
+You can start editing the popup by modifying `popup.tsx`. It should auto-update as you make changes. To add an options page, simply add a `options.tsx` file to the root of the project, with a react component default exported. Likewise to add a content page, add a `content.ts` file to the root of the project, importing some module and do some logic, then reload the extension on your browser.
 
-1. [Prompt Library - Chrome ウェブストア](#) にアクセス
-2. 「ブラウザに追加」をクリック
-3. 拡張機能アイコンから設定を開き、テンプレートを作成
+For further guidance, [visit our Documentation](https://docs.plasmo.com/)
 
-## 使い方
+## Making production build
 
-### 1. テンプレートを作成する
+Run the following:
 
-1. 拡張機能のオプションページを開く  
-2. カテゴリ内の「新規テンプレート作成」を選択  
-3. 以下を設定：
-   - **タイトル**: テンプレート名
-   - **内容**: プロンプト本文（変数は `{{説明}}` の形式で記述）
-4. 保存
+```bash
+pnpm build
+# or
+npm run build
+```
 
-### 2. プロンプトを挿入する
+This should create a production bundle for your extension, ready to be zipped and published to the stores.
 
-1. 対応サイトの入力欄でコマンドトリガー（`#`）を入力  
-2. 表示されるサジェストからテンプレートを選択  
-3. 変数がある場合は値を入力  
-4. 必要に応じて編集し、送信
+## Submit to the webstores
 
-### 3. テンプレートを管理する
-
-オプションページから以下の操作が可能：
-- テンプレートの編集・削除
-- カテゴリの追加・変更
-- 表示順の調整
-
-## 対応サイト
-
-| サイト名 | URL |
-| ---- | ---- |
-| ChatGPT | https://chatgpt.com/ |
-| Claude | https://claude.ai/ |
-| Gemini | https://gemini.google.com/ |
-| NotebookLM | https://notebooklm.google.com/ |
-| Grok | https://grok.com/ |
-| Copilot | https://copilot.microsoft.com/ |
-| Github Copilot | https://copilot.github.com/ |
-| Genspark | https://genspark.ai/ |
-| DeepSeek | https://chat.deepseek.com/ |
-
-### 現在未対応
-
-以下のサイトはリッチテキストエディタの仕様により未対応です（今後のアップデートで対応予定）：
-- Perplexity
-- Notion AI
-
-## 今後のアップデート予定
-
-- Popup機能の追加（トリガーキーの変更・テーマの切り替え・対応サイトごとの有効/無効切り替え）
-- 対応サイトの追加
-- オプション画面のUI改善と機能拡充
-
-## フィードバック・問題報告
-
-不具合や機能要望は [GitHub Issues](https://github.com/ta-ku44/PromptLibrary/issues) までお願いします。
+The easiest way to deploy your Plasmo extension is to use the built-in [bpp](https://bpp.browser.market) GitHub action. Prior to using this action however, make sure to build your extension and upload the first version to the store to establish the basic credentials. Then, simply follow [this setup instruction](https://docs.plasmo.com/framework/workflows/submit) and you should be on your way for automated submission!
