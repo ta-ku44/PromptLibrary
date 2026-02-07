@@ -28,7 +28,7 @@
         "https://*.deepseek.com/*",
         "https://www.genspark.ai/*"
       ],
-      "js": ["src/content/index.js"]
+      "js": ["src/content/content.js"]
     }
   ],
   "options_page": "src/options/index.html",

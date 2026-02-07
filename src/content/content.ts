@@ -1,9 +1,8 @@
-import { DomObserver } from './core/dom.ts';
-import { InputProcessor } from './core/input.ts';
+import { DomObserver } from './domObserver.ts';
+import { detectTrigger, insertPrompt, getTextContent } from './utils/inputBox.ts';
 import { showSuggest, hideSuggest, clearCachedData } from './ui/suggest.tsx';
 import browser from 'webextension-polyfill';
 
-let inputProcessor: InputProcessor | null = null;
 let key: string = '#';
 let curInputBox: HTMLElement | null = null;
 
@@ -23,34 +22,37 @@ async function init() {
   });
 }
 
-function setup(el: HTMLElement): void {
-  if (curInputBox === el) return;
+function setup(inputBox: HTMLElement): void {
+  if (curInputBox === inputBox) return;
   cleanup();
-  curInputBox = el;
-  inputProcessor = new InputProcessor(curInputBox, key, (query) => {
-    if (query !== null) {
-      showSuggest(curInputBox!, query, (template) => inputProcessor?.insertPrompt(template.content));
-    } else {
-      hideSuggest();
-    }
-  });
-  curInputBox.addEventListener('input', inputProcessor.readInputContent);
+  curInputBox = inputBox;
+  curInputBox.addEventListener('input', handleInput);
 }
 
 function cleanup(): void {
-  if (curInputBox && inputProcessor) curInputBox.removeEventListener('input', inputProcessor.readInputContent);
+  if (curInputBox) curInputBox.removeEventListener('input', handleInput);
   hideSuggest();
-  inputProcessor = null;
   curInputBox = null;
+}
+
+function handleInput(): void {
+  if (!curInputBox) return;
+
+  const text = getTextContent(curInputBox);
+  const query = detectTrigger(text, key);
+
+  if (query !== null) {
+    showSuggest(curInputBox, query, (template) => {
+      insertPrompt(curInputBox!, template.content, key);
+    });
+  } else {
+    hideSuggest();
+  }
 }
 
 async function loadKey(): Promise<void> {
   const result = await browser.storage.sync.get('data');
   key = (result.data as { shortcutKey: string }).shortcutKey || '#';
-
-  if (inputProcessor) {
-    inputProcessor.updateKey(key);
-  }
 }
 
 browser.storage.onChanged.addListener((changes, area) => {
@@ -60,9 +62,6 @@ browser.storage.onChanged.addListener((changes, area) => {
     const newKey = (changes.data.newValue as { shortcutKey: string })?.shortcutKey;
     if (typeof newKey === 'string') {
       key = newKey;
-      if (inputProcessor) {
-        inputProcessor.updateKey(key);
-      }
     }
   }
 });
