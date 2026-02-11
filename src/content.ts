@@ -4,7 +4,7 @@ import type { PlasmoCSConfig } from "plasmo"
 import ContentApp from "~features/content/ContentApp"
 
 export const config: PlasmoCSConfig = {
-  matches: []
+  matches: [ "<all_urls>" ]
   // TODO: LLM対応済みサイトのURLを追加
 }
 
