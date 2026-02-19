@@ -1,6 +1,6 @@
 {
-  "name": "wxt-react-starter",
-  "description": "manifest.json description",
+  "name": "prompt-library",
+  "description": "Prompt management tool — save, organize, and quickly insert your frequently used prompts.",
   "private": true,
   "version": "0.0.0",
   "type": "module",
