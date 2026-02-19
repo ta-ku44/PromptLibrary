@@ -1,6 +1,6 @@
 {
-  "name": "prompt-library",
-  "description": "Prompt management tool — save, organize, and quickly insert your frequently used prompts.",
+  "name": "wxt-react-starter",
+  "description": "manifest.json description",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -20,9 +20,12 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.2.0",
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
+    "@wxt-dev/auto-icons": "^1.1.0",
     "@wxt-dev/module-react": "^1.1.5",
+    "tailwindcss": "^4.2.0",
     "typescript": "^5.9.3",
     "wxt": "^0.20.15"
   }
