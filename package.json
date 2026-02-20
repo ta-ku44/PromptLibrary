@@ -25,6 +25,8 @@
     "@types/react-dom": "^19.2.3",
     "@wxt-dev/auto-icons": "^1.1.0",
     "@wxt-dev/module-react": "^1.1.5",
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4.2.0",
     "typescript": "^5.9.3",
     "wxt": "^0.20.15"
