@@ -1,19 +1,19 @@
 import { StateCreator } from 'zustand';
-import { hasVariables, applyValues } from '../../utils/variables';
+import { hasVariables, applyValues } from '@/utils/variables';
 import type { Item } from '@/types/catalog';
 import type { CaretRect } from '../../utils/inputBox';
 
 type FlowPhase =
   | { kind: 'idle' }
   | { kind: 'suggestion'; query: string; caretRect: CaretRect | null }
-  | { kind: 'confirming'; prompt: Item; values: Record<string, unknown> }
+  | { kind: 'confirming'; prompt: Item; values: Record<string, string> }
   | { kind: 'injecting'; text: string };
 
 export interface FlowSlice {
   phase: FlowPhase;
   updateSuggestion: (query: string, caretRect: CaretRect | null) => void;
   chooseItem: (prompt: Item) => void;
-  setVariableValue: (variableName: string, value: unknown) => void;
+  setVariableValue: (variableName: string, value: string) => void;
   confirm: () => void;
   resetFlow: () => void;
 }

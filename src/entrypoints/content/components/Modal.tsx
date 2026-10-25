@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { useShallow } from 'zustand/shallow';
+import { parseVariables } from '@/utils/variables';
 import { useContentStore } from '../stores/useContentStore';
-import { parseVariables } from '../utils/variables';
 
 export default function Modal() {
   const ref = useRef<HTMLDialogElement>(null);
