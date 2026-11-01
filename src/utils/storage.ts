@@ -1,7 +1,7 @@
 import { storage, getAppConfig } from '#imports';
 import { nanoid } from 'nanoid';
-import { generateKeyBetween, sortByFractionalIndex } from '@/utils/fractionalIndex';
-import { seed } from '@/utils/seedCatalog';
+import { keyAtEnd } from '@/utils/fractionalIndex';
+import { seed } from '@/utils/seed';
 import { Catalog } from '@/types/catalog';
 
 const catalog = storage.defineItem<Catalog>('local:catalog', { init: () => seed(getAppConfig().catalog), version: 1 });
@@ -38,14 +38,10 @@ const addEntity = async <T extends Key>(field: T, entity: Draft<T>) => {
 
   const list = await getCatalogField(field);
 
-  // 末尾に挿入するため、正しい順序に並び替えてから最後の要素を取得
-  const sorted = sortByFractionalIndex(list as Entity[]);
-  const last = sorted[sorted.length - 1];
-
   const newEntity = {
     id: nanoid(8),
     ...entity,
-    fractionalIndex: generateKeyBetween(last?.fractionalIndex, null),
+    fractionalIndex: keyAtEnd(list as Entity[]),
   } as Catalog[T][number];
   await setCatalogField(field, [...list, newEntity] as Catalog[T]);
 };

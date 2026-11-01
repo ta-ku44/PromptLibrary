@@ -7,9 +7,10 @@ import { LazyMotion } from 'motion/react';
 import { ChevronDown, GripVertical } from 'lucide-react';
 import { useCatalog } from '@/hooks';
 import { updateItem, updateCategory } from '@/utils/storage';
+import { keyAtIndex } from '@/utils/fractionalIndex';
 import { CategorySection } from './CategorySection';
 import { useCatalogStore } from '../stores/useCatalogStore';
-import { insertIndex, keyForInsertion } from '../libs/reorder';
+import { insertIndex } from '../libs/reorder';
 import type { EditTarget } from './PromptEditModal';
 
 const loadFeatures = () => import('../features').then((res) => res.default);
@@ -62,7 +63,7 @@ export const CatalogBoard = () => {
 
     if (activeType === 'category' && overType === 'category') {
       const siblingIds = categoryIds.filter((id) => id !== activeId);
-      const fractionalIndex = keyForInsertion(siblingIds, categories, insertIndex(siblingIds, overId, edge));
+      const fractionalIndex = keyAtIndex(siblingIds, categories, insertIndex(siblingIds, overId, edge));
       updateCategory(activeId, { fractionalIndex });
       return;
     }
@@ -73,7 +74,7 @@ export const CatalogBoard = () => {
 
       const siblingIds = (itemIdsByCategory[targetCategoryId] ?? []).filter((id) => id !== activeId);
       const index = overType === 'item' ? insertIndex(siblingIds, overId, edge) : 0;
-      const fractionalIndex = keyForInsertion(siblingIds, items, index);
+      const fractionalIndex = keyAtIndex(siblingIds, items, index);
       updateItem(activeId, { categoryId: targetCategoryId, fractionalIndex });
     }
   };
