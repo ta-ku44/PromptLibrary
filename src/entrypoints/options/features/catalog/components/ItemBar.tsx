@@ -4,6 +4,7 @@ import { useDraggable, useDroppable } from '@dnd-kit/react';
 import * as m from 'motion/react-m';
 import { GripVertical, Trash2, Pencil } from 'lucide-react';
 import { useCatalogStore } from '../stores/useCatalogStore';
+import { useDragPlaceholder } from '../hooks/useDragPlaceholder';
 
 type ItemBarProps = {
   itemId: string;
@@ -14,16 +15,17 @@ export const ItemBar = memo(({ itemId, onEditRequest }: ItemBarProps) => {
   const elementRef = useRef<HTMLLIElement>(null);
   const { item, overEdge } = useCatalogStore(useShallow((state) => ({
     item: state.items[itemId],
-    overEdge: state.activeType === 'item' && state.overId === itemId ? state.edge : null,
+    overEdge: state.active?.type === 'item' && state.over?.id === itemId ? state.over.edge : null,
   })));
   const { handleRef, isDragSource } = useDraggable({ id: itemId, type: 'item', element: elementRef, data: item });
   useDroppable({ id: itemId, type: 'item', element: elementRef });
+  const isPlaceholder = useDragPlaceholder(itemId, isDragSource);
 
   return (
     <m.li
       ref={elementRef}
-      layout={true}
-      className={`relative flex items-center gap-2 rounded-md border bg-card p-3 transition-opacity duration-200 select-none ${isDragSource ? 'opacity-40' : ''}`}
+      layout={!isDragSource}
+      className={`relative flex items-center gap-2 rounded-md border bg-card p-3 select-none ${isPlaceholder ? 'opacity-40' : ''}`}
     >
       {/* ドラッグ中のアイテムの上に、ドロップ先の境界線を表示する */}
       {overEdge && !isDragSource && (

@@ -1,6 +1,6 @@
 import type { StateCreator } from 'zustand';
-import type { DragSlice } from './dragSlice';
 import type { EntitySlice } from './entitySlice';
+import type { DragSlice } from './dragSlice';
 
 export interface ExpandSlice {
   collapsedIds: Set<string>;
@@ -10,7 +10,7 @@ export interface ExpandSlice {
   expand: (id: string) => void;
 }
 
-export const createExpandSlice: StateCreator<ExpandSlice & DragSlice & EntitySlice, [], [], ExpandSlice> = (set) => ({
+export const createExpandSlice: StateCreator<EntitySlice & DragSlice & ExpandSlice, [], [], ExpandSlice> = (set) => ({
   collapsedIds: new Set(),
 
   toggleExpand: (id) => set((state) => {

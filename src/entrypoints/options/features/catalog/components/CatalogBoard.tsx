@@ -1,98 +1,79 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import { useShallow } from 'zustand/shallow';
 import { DragDropProvider, DragOverlay } from '@dnd-kit/react';
-import type { DragStartEvent, DragOverEvent, DragEndEvent } from '@dnd-kit/react';
+import type { DragEndEvent, DragOverEvent, DragStartEvent } from '@dnd-kit/react';
+import type { DropAnimationFunction } from '@dnd-kit/dom';
 import { RestrictToVerticalAxis } from '@dnd-kit/abstract/modifiers';
-import { LazyMotion } from 'motion/react';
+import { LazyMotion, animate, type Transition } from 'motion/react';
 import { ChevronDown, GripVertical } from 'lucide-react';
 import { useCatalog } from '@/hooks';
-import { updateItem, updateCategory } from '@/utils/storage';
-import { keyAtIndex } from '@/utils/fractionalIndex';
 import { CategorySection } from './CategorySection';
 import { useCatalogStore } from '../stores/useCatalogStore';
-import { insertIndex } from '../libs/reorder';
-import type { EditTarget } from './PromptEditModal';
+import type { DragType } from '../stores/slices/dragSlice';
 
 const loadFeatures = () => import('../features').then((res) => res.default);
 
+const DROP_TRANSITION: Transition = { duration: 0.25, ease: 'easeOut' };
+const dropAnimation: DropAnimationFunction = async ({ source, element, feedbackElement }) => {
+  const target = source.manager?.registry.draggables.get(source.id)?.element ?? element;
+  const content = feedbackElement.firstElementChild;
+
+  if (content) {
+    const from = feedbackElement.getBoundingClientRect();
+    const to = target.getBoundingClientRect();
+    await animate(content, { x: to.left - from.left, y: to.top - from.top }, DROP_TRANSITION);
+  }
+
+  flushSync(() => useCatalogStore.getState().clearPlaceholder(String(source.id)));
+};
+
 export const CatalogBoard = () => {
   const catalog = useCatalog();
-  const { syncCatalog, categoryIds, startDrag, setOver, endDrag } = useCatalogStore(
+  const { syncFromStorage, categoryIds, startDrag, setOver, cancelDrag, commitDrop } = useCatalogStore(
     useShallow((state) => ({
-      syncCatalog: state.syncCatalog,
+      syncFromStorage: state.syncFromStorage,
       categoryIds: state.categoryIds,
       startDrag: state.startDrag,
       setOver: state.setOver,
-      endDrag: state.endDrag,
+      cancelDrag: state.cancelDrag,
+      commitDrop: state.commitDrop,
     })),
   );
-  const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
-  const handleAddItem = useCallback((categoryId: string) => setEditTarget({ mode: 'create', categoryId }), []);
-  const handleEditItem = useCallback((itemId: string) => setEditTarget({ mode: 'edit', itemId }), []);
 
   useEffect(() => {
-    syncCatalog(catalog);
-  }, [catalog, syncCatalog]);
+    syncFromStorage(catalog);
+  }, [catalog, syncFromStorage]);
 
   const dragStart = (event: DragStartEvent) => {
     const { source } = event.operation;
     if (!source) return;
-    startDrag(String(source.id), source.type as 'item' | 'category');
+    startDrag({ id: String(source.id), type: source.type as DragType });
   };
 
   const dragOver = (event: DragOverEvent) => {
     const { target, position } = event.operation;
-    const { overId: prevOverId, edge: prevEdge } = useCatalogStore.getState();
-
     if (!target || !target.shape) {
-      if (prevOverId !== null) setOver(null, null, null);
+      setOver(null);
       return;
     }
-
-    const id = String(target.id);
     const edge = position.current.y < target.shape.center.y ? 'top' : 'bottom';
-    if (id === prevOverId && edge === prevEdge) return;
-    setOver(id, target.type as 'item' | 'category' | 'category-slot', edge);
+    setOver({ id: String(target.id), type: target.type as DragType, edge });
   };
 
   const dragEnd = (event: DragEndEvent) => {
-    const { activeId, activeType, overId, overType, edge, categories, items, itemIdsByCategory } =
-      useCatalogStore.getState();
-    endDrag();
-    if (event.canceled || !activeId || !overId) return;
-
-    if (activeType === 'category' && overType === 'category') {
-      const siblingIds = categoryIds.filter((id) => id !== activeId);
-      const fractionalIndex = keyAtIndex(siblingIds, categories, insertIndex(siblingIds, overId, edge));
-      updateCategory(activeId, { fractionalIndex });
-      return;
-    }
-
-    if (activeType === 'item') {
-      const targetCategoryId = overType === 'item' ? items[overId]?.categoryId : overId;
-      if (!targetCategoryId) return;
-
-      const siblingIds = (itemIdsByCategory[targetCategoryId] ?? []).filter((id) => id !== activeId);
-      const index = overType === 'item' ? insertIndex(siblingIds, overId, edge) : 0;
-      const fractionalIndex = keyAtIndex(siblingIds, items, index);
-      updateItem(activeId, { categoryId: targetCategoryId, fractionalIndex });
-    }
+    flushSync(event.canceled ? cancelDrag : commitDrop);
   };
 
   return (
     <LazyMotion features={loadFeatures}>
-      <DragDropProvider
-        modifiers={[RestrictToVerticalAxis]}
-        onDragStart={dragStart}
-        onDragOver={dragOver}
-        onDragEnd={dragEnd}
-      >
+      <DragDropProvider modifiers={[RestrictToVerticalAxis]} onDragStart={dragStart} onDragOver={dragOver} onDragEnd={dragEnd}>
         <div className="mx-auto flex max-w-2xl flex-col gap-2.5">
           {categoryIds.map((c, i) => (
-            <CategorySection key={c} categoryId={c} index={i} onEditItem={handleEditItem} onAddItem={handleAddItem} />
+            <CategorySection key={c} categoryId={c} index={i} onEditItem={() => {}} onAddItem={() => {}} />
           ))}
         </div>
-        <DragOverlay>
+        <DragOverlay dropAnimation={dropAnimation}>
           {(source) => {
             const data = source.data as { name: string } | undefined;
             if (!data) return null;
